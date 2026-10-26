@@ -1,0 +1,48 @@
+devices:
+  - name: router
+    mac: "50:c7:bf:11:00:02"
+    type: router
+    ports: [53, 80, 5000]
+    expected_findings: [RF-HTTP-ADMIN, RF-UPNP]
+
+  - name: camera
+    mac: "c0:56:e3:12:34:56"
+    type: camera
+    ports: [23, 80, 554]
+    expected_findings: [RF-TELNET, RF-HTTP-ADMIN]
+
+  - name: nas
+    mac: "00:11:32:33:00:04"
+    type: nas
+    ports: [21, 445]
+    expected_findings: [RF-SMB-GUEST, RF-FTP-ANON]
+
+  - name: printer
+    mac: "00:80:77:55:00:06"
+    type: printer
+    ports: [80, 631, 9100]
+    expected_findings: [RF-HTTP-ADMIN]
+
+  - name: smart-plug
+    mac: "24:0a:c4:77:00:07"
+    type: smart-plug
+    ports: [1883]
+    expected_findings: [RF-MQTT-NOAUTH]
+
+  - name: laptop
+    mac: "3a:7f:21:9c:44:b1"
+    type: laptop
+    ports: [22]  
+    expected_findings: []     # clean device
+
+  - name: smart-tv
+    mac: "f4:f5:d8:88:00:08"
+    type: smart-tv
+    ports: [8008, 8009, 8443]
+    expected_findings: []     # clean
+
+  - name: phone
+    mac: "a6:5e:90:3d:71:c8"
+    type: phone
+    ports: []                 # nothing open
+    expected_findings: []     # clean
