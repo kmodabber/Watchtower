@@ -1,0 +1,5 @@
+# Python 
+.venv
+
+# Local docs
+*.local
