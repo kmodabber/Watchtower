@@ -1,0 +1,2 @@
+# laptop: SSH only. Clean device
+22|SSH-2.0-OpenSSH_9.6\r\n

@@ -1,0 +1,5 @@
+# camera: Telnet, RTSP video, web admin over plain HTTP
+# Findings: RF-TELNET (port 23), RF-HTTP-ADMIN (port 80)
+23|\r\nlogin: 
+80|HTTP/1.0 200 OK\r\nServer: App-webs/\r\nContent-Type: text/html\r\n\r\n<html><title>IP Camera</title></html>\n
+554|RTSP/1.0 200 OK\r\nCSeq: 1\r\nServer: Hikvision RTSP Server\r\n\r\n

@@ -1,0 +1,5 @@
+# router: DNS, web admin over plain HTTP, UPnP
+# Findings: RF-HTTP-ADMIN (port 80), RF-UPNP (port 5000)
+53|
+80|HTTP/1.0 200 OK\r\nServer: TP-LINK Router httpd\r\nContent-Type: text/html\r\n\r\n<html><title>Router Admin Login</title></html>\n
+5000|HTTP/1.0 200 OK\r\nSERVER: Linux/3.10 UPnP/1.0 MiniUPnPd/1.8\r\nContent-Type: text/xml\r\n\r\n<root><device><deviceType>urn:schemas-upnp-org:device:InternetGatewayDevice:1</deviceType></device></root>\n
