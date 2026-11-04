@@ -15,19 +15,19 @@ devices:
     mac: "00:11:32:33:00:04"
     type: nas
     ports: [21, 445]
-    expected_findings: [RF-SMB-GUEST, RF-FTP-ANON]
+    expected_findings: [ RF-FTP, RF-SMB,]
 
   - name: printer
     mac: "00:80:77:55:00:06"
     type: printer
     ports: [80, 631, 9100]
-    expected_findings: [RF-HTTP-ADMIN]
+    expected_findings: [RF-HTTP-PRINTER]
 
   - name: smart-plug
     mac: "24:0a:c4:77:00:07"
     type: smart-plug
     ports: [1883]
-    expected_findings: [RF-MQTT-NOAUTH]
+    expected_findings: [RF-MQTT]
 
   - name: laptop
     mac: "3a:7f:21:9c:44:b1"
