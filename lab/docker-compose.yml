@@ -55,6 +55,23 @@ services:
         ipv4_address: 172.28.0.5
         mac_address: "00:11:32:33:00:04"  # vendor OUI (Synology)
 
+  # WT-95: development-only scanner. Not part of the production image.
+  scanner:
+    build:
+      context: .
+      dockerfile: Dockerfile.scanner
+    image: watchtower-scanner-dev:local
+    profiles: [dev]
+    cap_drop: [ALL]
+    cap_add: [NET_RAW, NET_ADMIN]
+    volumes:
+      - ..:/workspace
+    working_dir: /workspace
+    environment:
+      WATCHTOWER_CONFIG: /workspace/lab/watchtower.dev.toml
+    networks:
+      - lab_net
+
 networks:
   lab_net:
     name: lab_net   # fixed name so the scanner project can join it

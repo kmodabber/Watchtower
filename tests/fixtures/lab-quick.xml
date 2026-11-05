@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<?xml-stylesheet href="file:///usr/bin/../share/nmap/nmap.xsl" type="text/xsl"?>
+<!-- Nmap 7.95 scan initiated Thu Nov  5 17:39:27 2026 as: nmap -sn -&#45;privileged -oX /workspace/tests/fixtures/lab-quick.xml -&#45;exclude 172.28.0.6 172.28.0.0/24 -->
+<nmaprun scanner="nmap" args="nmap -sn -&#45;privileged -oX /workspace/tests/fixtures/lab-quick.xml -&#45;exclude 172.28.0.6 172.28.0.0/24" start="1793900367" startstr="Thu Nov  5 17:39:27 2026" version="7.95" xmloutputversion="1.05">
+<verbose level="0"/>
+<debugging level="0"/>
+<host><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="172.28.0.1" addrtype="ipv4"/>
+<address addr="4A:29:05:B6:47:50" addrtype="mac"/>
+<hostnames>
+</hostnames>
+<times srtt="281" rttvar="5000" to="100000"/>
+</host>
+<host><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="172.28.0.2" addrtype="ipv4"/>
+<address addr="50:C7:BF:11:00:02" addrtype="mac" vendor="TP-Link Technologies"/>
+<hostnames>
+<hostname name="lab-router-1.lab_net" type="PTR"/>
+</hostnames>
+<times srtt="24" rttvar="5000" to="100000"/>
+</host>
+<host><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="172.28.0.3" addrtype="ipv4"/>
+<address addr="C0:56:E3:12:34:56" addrtype="mac" vendor="Hangzhou Hikvision Digital Technology"/>
+<hostnames>
+<hostname name="lab-camera-1.lab_net" type="PTR"/>
+</hostnames>
+<times srtt="32" rttvar="5000" to="100000"/>
+</host>
+<host><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="172.28.0.4" addrtype="ipv4"/>
+<address addr="3A:7F:21:9C:44:B1" addrtype="mac"/>
+<hostnames>
+<hostname name="lab-laptop-1.lab_net" type="PTR"/>
+</hostnames>
+<times srtt="29" rttvar="5000" to="100000"/>
+</host>
+<host><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="172.28.0.5" addrtype="ipv4"/>
+<address addr="00:11:32:33:00:04" addrtype="mac" vendor="Synology Incorporated"/>
+<hostnames>
+<hostname name="lab-nas-1.lab_net" type="PTR"/>
+</hostnames>
+<times srtt="76" rttvar="1239" to="100000"/>
+</host>
+<runstats><finished time="1793900369" timestr="Thu Nov  5 17:39:29 2026" summary="Nmap done at Thu Nov  5 17:39:29 2026; 255 IP addresses (5 hosts up) scanned in 2.02 seconds" elapsed="2.02" exit="success"/><hosts up="5" down="250" total="255"/>
+</runstats>
+</nmaprun>

@@ -1,0 +1,7 @@
+# Non-secret development settings. This file is safe to commit.
+interface = "eth0"
+db_path = "/workspace/var/watchtower.db"
+quick_interval_min = 5
+full_interval_min = 15
+discord_webhook = ""
+dashboard_url = "http://localhost:8000"

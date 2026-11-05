@@ -1,0 +1,10 @@
+# WT-95: development-only scanner; do not publish this image or bundle Nmap.
+FROM python:3.12-slim
+
+LABEL org.opencontainers.image.description="Watchtower scanner development only; never publish"
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends nmap iproute2 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
