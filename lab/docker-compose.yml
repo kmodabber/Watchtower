@@ -5,7 +5,7 @@ name: lab
 
 #Shared settings for the "banner only" devices (socat image). All Linux capabilities are dropped except one needed to bind ports below 1024
 x-device: &device
-  build: ./devices
+  build: ./shared
   image: lab-device:v0
   restart: unless-stopped
   cap_drop: [ALL]
@@ -16,8 +16,11 @@ services:
   router:
     <<: *device
     hostname: router
+    # dnsmasq starts as root and drops to its own user, so it needs
+    # SETUID/SETGID.
+    cap_add: [NET_BIND_SERVICE, SETUID, SETGID]
     volumes:
-      - ./devices/router/services.txt:/etc/lab/services.txt:ro
+      - ./shared/router:/etc/lab:ro
     networks:
       lab_net:
         ipv4_address: 172.28.0.2
@@ -27,7 +30,7 @@ services:
     <<: *device
     hostname: camera
     volumes:
-      - ./devices/camera/services.txt:/etc/lab/services.txt:ro
+      - ./shared/camera:/etc/lab:ro
     networks:
       lab_net:
         ipv4_address: 172.28.0.3
@@ -37,7 +40,7 @@ services:
     <<: *device
     hostname: laptop
     volumes:
-      - ./devices/laptop/services.txt:/etc/lab/services.txt:ro
+      - ./shared/laptop:/etc/lab:ro
     networks:
       lab_net:
         ipv4_address: 172.28.0.4
@@ -54,6 +57,21 @@ services:
       lab_net:
         ipv4_address: 172.28.0.5
         mac_address: "00:11:32:33:00:04"  # vendor OUI (Synology)
+  scanner:
+    build:
+      context: .
+      dockerfile: Dockerfile.scanner
+    image: watchtower-scanner-dev:local
+    profiles: [dev]
+    cap_drop: [ALL]
+    cap_add: [NET_RAW, NET_ADMIN]
+    volumes:
+      - ..:/workspace
+    working_dir: /workspace
+    environment:
+      WATCHTOWER_CONFIG: /workspace/lab/watchtower.dev.toml
+    networks:
+      - lab_net
 
 networks:
   lab_net:

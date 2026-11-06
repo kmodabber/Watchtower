@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<root xmlns="urn:schemas-upnp-org:device-1-0">
+  <specVersion>
+    <major>1</major>
+    <minor>0</minor>
+  </specVersion>
+  <device>
+    <deviceType>urn:schemas-upnp-org:device:InternetGatewayDevice:1</deviceType>
+    <friendlyName>Lab Router</friendlyName>
+    <manufacturer>TP-LINK</manufacturer>
+    <modelName>TL-WR841N</modelName>
+    <UDN>uuid:00000000-0000-0000-0000-500000000002</UDN>
+    <serviceList>
+      <service>
+        <serviceType>urn:schemas-upnp-org:service:WANIPConnection:1</serviceType>
+        <serviceId>urn:upnp-org:serviceId:WANIPConn1</serviceId>
+        <controlURL>/ctl/IPConn</controlURL>
+        <eventSubURL>/evt/IPConn</eventSubURL>
+        <SCPDURL>/WANIPCn.xml</SCPDURL>
+      </service>
+    </serviceList>
+  </device>
+</root>

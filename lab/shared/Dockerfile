@@ -1,6 +1,6 @@
 FROM alpine:3.20
 
-RUN apk add --no-cache socat
+RUN apk add --no-cache socat busybox-extras dnsmasq
 
 COPY entrypoint.sh /entrypoint.sh
 
