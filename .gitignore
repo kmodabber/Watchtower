@@ -4,3 +4,13 @@ __pycache__/
 
 # Local docs
 *.local
+
+spike.db
+
+.venv/
+
+__pycache__/
+
+*.pyc
+
+.env
