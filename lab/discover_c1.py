@@ -4,7 +4,7 @@ Inside the scanner dev container, from /workspace:
     python -m lab.discover_c1
 
 This is a Stage 1 lab demonstration, not the production scan engine.
-C1 conversion comes from Joseph's independent XML parser (WT-96).
+C1 conversion comes from independent XML parser (WT-96).
 """
 
 from __future__ import annotations
