@@ -1,7 +1,5 @@
-- id: RF-TELNET
-  title: Telnet is open
-  severity: high            # high | medium | low | info
-  match: { port: 23 }       # or service, product, version_below
-  explanation: Telnet sends passwords without encryption, so anyone on the network can read them.
-  fix: Turn off Telnet in the device's settings. Use the app or web page instead.
-  references: []
+# Known-vulnerable software versions, contract C3 (doc 05). Owner: Joseph.
+# Empty until Stage 4 (WT-FR-18, known-vulnerability hints). Same fields as
+# red_flags.yaml, matching on product and version_below instead of a port, e.g.
+#   match: { product: dnsmasq, version_below: "2.90" }
+[]

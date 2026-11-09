@@ -7,15 +7,15 @@ matches contract C1.  No other module should read Nmap output directly.
 Running as a script
 -------------------
 When executed directly the parser reads both lab fixture XMLs and writes
-their C1-compliant JSON representations into this same directory:
+their C1-compliant JSON next to them (the parser tests compare against these):
 
     python -m watchtower.scanner.nmap_parser
     # or
     python watchtower/scanner/nmap_parser.py
 
 Output files (committed as reference examples of the C1 contract):
-    watchtower/scanner/parsed_lab_quick.json
-    watchtower/scanner/parsed_lab_full.json
+    tests/fixtures/lab-quick.c1.json
+    tests/fixtures/lab-full.c1.json
 
 Contract C1 shape
 -----------------
@@ -59,7 +59,7 @@ from __future__ import annotations
 
 import re
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from xml.etree import ElementTree as ET
@@ -68,9 +68,10 @@ from xml.etree import ElementTree as ET
 # Public helpers
 # ---------------------------------------------------------------------------
 
+
 def _ts_to_iso(unix_ts: str) -> str:
     """Convert a Unix timestamp string to an ISO-8601 UTC string."""
-    return datetime.fromtimestamp(int(unix_ts), tz=timezone.utc).isoformat()
+    return datetime.fromtimestamp(int(unix_ts), tz=UTC).isoformat()
 
 
 def _detect_profile(args: str) -> str:
@@ -80,12 +81,11 @@ def _detect_profile(args: str) -> str:
     Quick scans use ``-sn`` (ping-only, no port scan).
     Full scans use ``-sS`` / ``-sV`` etc.
     """
-    if re.search(r'\b-sn\b', args):
+    # Compare whole tokens: a regex \b never matches between a space and "-".
+    flags = set(args.split())
+    if "-sn" in flags:
         return "quick"
-    if re.search(r'\b-s[STUA]\b', args):
-        return "full"
-    # Fallback: presence of version detection flags
-    if re.search(r'\b-sV\b', args):
+    if flags & {"-sS", "-sT", "-sU", "-sA", "-sV"}:
         return "full"
     return "quick"
 
@@ -95,7 +95,7 @@ def _extract_subnet(args: str) -> str | None:
     Pull the target CIDR from the nmap args string.
     Looks for the last token that looks like an IPv4 CIDR (e.g. 172.28.0.0/24).
     """
-    matches = re.findall(r'\d{1,3}(?:\.\d{1,3}){3}/\d{1,2}', args)
+    matches = re.findall(r"\d{1,3}(?:\.\d{1,3}){3}/\d{1,2}", args)
     return matches[-1] if matches else None
 
 
@@ -122,6 +122,7 @@ def _is_mac_randomised(mac: str | None) -> bool:
 # ---------------------------------------------------------------------------
 # Core parser
 # ---------------------------------------------------------------------------
+
 
 def parse_nmap_xml(xml_path: str | Path, profile: str | None = None) -> dict[str, Any]:
     """
@@ -162,8 +163,7 @@ def parse_nmap_xml(xml_path: str | Path, profile: str | None = None) -> dict[str
 
     if root.tag != "nmaprun":
         raise ValueError(
-            f"Expected root element <nmaprun>, got <{root.tag}>. "
-            "Is this a valid Nmap XML file?"
+            f"Expected root element <nmaprun>, got <{root.tag}>. " "Is this a valid Nmap XML file?"
         )
 
     # ---- scan-level metadata ------------------------------------------------
@@ -205,9 +205,7 @@ def parse_nmap_xml(xml_path: str | Path, profile: str | None = None) -> dict[str
                 vendor = addr_elem.get("vendor")  # may be absent → None
 
         if not ip:
-            raise ValueError(
-                f"Found a <host> element with no IPv4 address in {xml_path}."
-            )
+            raise ValueError(f"Found a <host> element with no IPv4 address in {xml_path}.")
 
         # hostname – take the first PTR record if present
         hostname: str | None = None
@@ -239,38 +237,42 @@ def parse_nmap_xml(xml_path: str | Path, profile: str | None = None) -> dict[str
                 product = service_elem.get("product")
                 version = service_elem.get("version")
 
-            ports.append({
-                "port":     int(portid) if portid is not None else None,
-                "protocol": protocol,
-                "state":    state,
-                "service":  service,
-                "product":  product,
-                "version":  version,
-            })
+            ports.append(
+                {
+                    "port": int(portid) if portid is not None else None,
+                    "protocol": protocol,
+                    "state": state,
+                    "service": service,
+                    "product": product,
+                    "version": version,
+                }
+            )
 
-        hosts.append({
-            "ip":             ip,
-            "mac":            mac,
-            "vendor":         vendor,
-            "mac_randomised": _is_mac_randomised(mac),
-            "hostname":       hostname,
-            "os_guess":       os_guess,
-            "ports":          ports,
-        })
+        hosts.append(
+            {
+                "ip": ip,
+                "mac": mac,
+                "vendor": vendor,
+                "mac_randomised": _is_mac_randomised(mac),
+                "hostname": hostname,
+                "os_guess": os_guess,
+                "ports": ports,
+            }
+        )
 
     return {
-        "scan_id":      str(uuid.uuid4()),
-        "profile":      resolved_profile,
-        "subnet":       subnet,
-        "started_at":   _ts_to_iso(start_ts),
-        "finished_at":  _ts_to_iso(finish_ts),
+        "scan_id": str(uuid.uuid4()),
+        "profile": resolved_profile,
+        "subnet": subnet,
+        "started_at": _ts_to_iso(start_ts),
+        "finished_at": _ts_to_iso(finish_ts),
         "nmap_version": nmap_version,
-        "hosts":        hosts,
+        "hosts": hosts,
     }
 
 
 # ---------------------------------------------------------------------------
-# Script entry-point – generates parsed_lab_*.json reference files
+# Script entry-point – regenerates tests/fixtures/lab-*.c1.json
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
@@ -281,8 +283,8 @@ if __name__ == "__main__":
     _FIXTURES = _REPO_ROOT / "tests" / "fixtures"
 
     _SCANS = [
-        ("quick", _FIXTURES / "lab-quick.xml", _SCANNER_DIR / "parsed_lab_quick.json"),
-        ("full",  _FIXTURES / "lab-full.xml",  _SCANNER_DIR / "parsed_lab_full.json"),
+        ("quick", _FIXTURES / "lab-quick.xml", _FIXTURES / "lab-quick.c1.json"),
+        ("full", _FIXTURES / "lab-full.xml", _FIXTURES / "lab-full.c1.json"),
     ]
 
     for _profile, _xml_path, _out_path in _SCANS:
@@ -296,4 +298,3 @@ if __name__ == "__main__":
             f"  ({len(_result['hosts'])} hosts,"
             f" {sum(len(h['ports']) for h in _result['hosts'])} open ports)"
         )
-

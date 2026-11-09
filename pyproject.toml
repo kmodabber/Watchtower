@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Home network scanner that flags risky settings in plain language"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = ["pyyaml>=6.0"]   # rules (C3) and lab inventory (C6)
 
 [dependency-groups]
 dev = ["ruff==0.8.6", "pytest==8.3.4"]
@@ -20,6 +20,7 @@ select = ["E", "W", "F", "I", "B", "UP"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]   # so tests can import watchtower/ and lab/ when run as plain `pytest`
 addopts = "-ra"
 markers = [
     "lab: needs the Docker lab running (added in Stage 2, skipped in the unit job)",
