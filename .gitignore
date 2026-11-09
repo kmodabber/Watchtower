@@ -1,16 +1,20 @@
-# Python 
-.venv
+# Python
+.venv/
 __pycache__/
+*.pyc
+
+# Secrets (Discord webhook etc. come from the environment)
+.env
 
 # Local docs
 *.local
 
-spike.db
+# Local databases and runtime files (never commit scan results)
+var/
+*.db
+*.db-wal
+*.db-shm
 
-.venv/
-
-__pycache__/
-
-*.pyc
-
-.env
+# Tool caches
+.ruff_cache/
+.pytest_cache/

@@ -1,0 +1,55 @@
+{
+  "scan_id": "7cdfefe3-c068-4618-9a62-17fd019b7ce9",
+  "profile": "quick",
+  "subnet": "172.28.0.0/24",
+  "started_at": "2026-11-06T07:52:02+00:00",
+  "finished_at": "2026-11-06T07:52:04+00:00",
+  "nmap_version": "7.95",
+  "hosts": [
+    {
+      "ip": "172.28.0.1",
+      "mac": "A2:FC:AE:A8:A0:A9",
+      "vendor": null,
+      "mac_randomised": true,
+      "hostname": null,
+      "os_guess": null,
+      "ports": []
+    },
+    {
+      "ip": "172.28.0.2",
+      "mac": "50:C7:BF:11:00:02",
+      "vendor": "TP-Link Technologies",
+      "mac_randomised": false,
+      "hostname": "lab-router-1.lab_net",
+      "os_guess": null,
+      "ports": []
+    },
+    {
+      "ip": "172.28.0.3",
+      "mac": "C0:56:E3:12:34:56",
+      "vendor": "Hangzhou Hikvision Digital Technology",
+      "mac_randomised": false,
+      "hostname": "lab-camera-1.lab_net",
+      "os_guess": null,
+      "ports": []
+    },
+    {
+      "ip": "172.28.0.4",
+      "mac": "3A:7F:21:9C:44:B1",
+      "vendor": null,
+      "mac_randomised": true,
+      "hostname": "lab-laptop-1.lab_net",
+      "os_guess": null,
+      "ports": []
+    },
+    {
+      "ip": "172.28.0.5",
+      "mac": "00:11:32:33:00:04",
+      "vendor": "Synology Incorporated",
+      "mac_randomised": false,
+      "hostname": "lab-nas-1.lab_net",
+      "os_guess": null,
+      "ports": []
+    }
+  ]
+}

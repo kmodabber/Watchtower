@@ -1,4 +1,5 @@
 """Throwaway scheduler spike for Stage 1. Fake scans only."""
+
 import sqlite3
 import time
 from datetime import datetime
@@ -19,18 +20,13 @@ def run_scan(kind):
 
 def check_requests():
     row = db.execute(
-        "SELECT id, kind FROM scan_requests "
-        "WHERE status='pending' ORDER BY id LIMIT 1"
+        "SELECT id, kind FROM scan_requests WHERE status='pending' ORDER BY id LIMIT 1"
     ).fetchone()
     if row:
-        db.execute(
-            "UPDATE scan_requests SET status='running' WHERE id=?", (row[0],)
-        )
+        db.execute("UPDATE scan_requests SET status='running' WHERE id=?", (row[0],))
         db.commit()
         run_scan(row[1] + " (requested)")
-        db.execute(
-            "UPDATE scan_requests SET status='done' WHERE id=?", (row[0],)
-        )
+        db.execute("UPDATE scan_requests SET status='done' WHERE id=?", (row[0],))
         db.commit()
 
 

@@ -1,0 +1,5 @@
+# Known-vulnerable software versions, contract C3 (doc 05). Owner: Joseph.
+# Empty until Stage 4 (WT-FR-18, known-vulnerability hints). Same fields as
+# red_flags.yaml, matching on product and version_below instead of a port, e.g.
+#   match: { product: dnsmasq, version_below: "2.90" }
+[]
