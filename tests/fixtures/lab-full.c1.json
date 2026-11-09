@@ -1,0 +1,140 @@
+{
+  "scan_id": "9d175d7f-888e-4b4a-8ec8-7f3809800d23",
+  "profile": "full",
+  "subnet": "172.28.0.0/24",
+  "started_at": "2026-11-06T08:08:29+00:00",
+  "finished_at": "2026-11-06T08:09:46+00:00",
+  "nmap_version": "7.95",
+  "hosts": [
+    {
+      "ip": "172.28.0.1",
+      "mac": "A2:FC:AE:A8:A0:A9",
+      "vendor": null,
+      "mac_randomised": true,
+      "hostname": null,
+      "os_guess": null,
+      "ports": [
+        {
+          "port": 111,
+          "protocol": "tcp",
+          "state": "open",
+          "service": "rpcbind",
+          "product": null,
+          "version": null
+        }
+      ]
+    },
+    {
+      "ip": "172.28.0.2",
+      "mac": "50:C7:BF:11:00:02",
+      "vendor": "TP-Link Technologies",
+      "mac_randomised": false,
+      "hostname": "lab-router-1.lab_net",
+      "os_guess": null,
+      "ports": [
+        {
+          "port": 53,
+          "protocol": "tcp",
+          "state": "open",
+          "service": "domain",
+          "product": "dnsmasq",
+          "version": "2.90"
+        },
+        {
+          "port": 80,
+          "protocol": "tcp",
+          "state": "open",
+          "service": "http",
+          "product": null,
+          "version": null
+        },
+        {
+          "port": 5000,
+          "protocol": "tcp",
+          "state": "open",
+          "service": "upnp",
+          "product": null,
+          "version": null
+        }
+      ]
+    },
+    {
+      "ip": "172.28.0.3",
+      "mac": "C0:56:E3:12:34:56",
+      "vendor": "Hangzhou Hikvision Digital Technology",
+      "mac_randomised": false,
+      "hostname": "lab-camera-1.lab_net",
+      "os_guess": null,
+      "ports": [
+        {
+          "port": 23,
+          "protocol": "tcp",
+          "state": "open",
+          "service": "telnet",
+          "product": "BusyBox telnetd",
+          "version": null
+        },
+        {
+          "port": 80,
+          "protocol": "tcp",
+          "state": "open",
+          "service": "http",
+          "product": null,
+          "version": null
+        },
+        {
+          "port": 554,
+          "protocol": "tcp",
+          "state": "open",
+          "service": "tcpwrapped",
+          "product": null,
+          "version": null
+        }
+      ]
+    },
+    {
+      "ip": "172.28.0.4",
+      "mac": "3A:7F:21:9C:44:B1",
+      "vendor": null,
+      "mac_randomised": true,
+      "hostname": "lab-laptop-1.lab_net",
+      "os_guess": null,
+      "ports": [
+        {
+          "port": 22,
+          "protocol": "tcp",
+          "state": "open",
+          "service": "ssh",
+          "product": null,
+          "version": null
+        }
+      ]
+    },
+    {
+      "ip": "172.28.0.5",
+      "mac": "00:11:32:33:00:04",
+      "vendor": "Synology Incorporated",
+      "mac_randomised": false,
+      "hostname": "lab-nas-1.lab_net",
+      "os_guess": null,
+      "ports": [
+        {
+          "port": 21,
+          "protocol": "tcp",
+          "state": "open",
+          "service": "ftp",
+          "product": "vsftpd",
+          "version": "2.0.8 or later"
+        },
+        {
+          "port": 445,
+          "protocol": "tcp",
+          "state": "open",
+          "service": "netbios-ssn",
+          "product": "Samba smbd",
+          "version": "4"
+        }
+      ]
+    }
+  ]
+}

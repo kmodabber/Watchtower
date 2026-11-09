@@ -9,7 +9,7 @@ Home network scanner that finds devices, flags risky settings in plain language 
 Python 3.12 (same as the scanner dev container in `lab/Dockerfile.scanner`).
 
 ```sh
-uv sync                   # or: pip install "ruff==0.8.6" "pytest==8.3.4"
+uv sync                   # or: pip install "ruff==0.8.6" "pytest==8.3.4" "pyyaml==6.0.2"
 ruff check .              # lint
 ruff format .             # format (CI runs ruff format --check)
 pytest                    # unit tests
