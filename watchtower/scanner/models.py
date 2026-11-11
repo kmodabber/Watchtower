@@ -181,7 +181,7 @@ class TypeGuess(_JsonMixin):
     reasons: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
-        if isinstance(self.confidence, bool) or not isinstance(self.confidence, (int, float)):
+        if isinstance(self.confidence, bool) or not isinstance(self.confidence, int | float):
             raise ModelError("TypeGuess: confidence must be a number")
         if not 0.0 <= self.confidence <= 1.0:
             raise ModelError("TypeGuess: confidence must be between 0 and 1")
