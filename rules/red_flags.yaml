@@ -1,0 +1,129 @@
+# Red-flag rules, contract C3 (doc 05). Owner: Joseph. Draft v0 for Stage 1 (WT-97).
+#
+# Each rule turns something risky that a scan found into a plain-language finding.
+#   id            RF-..., must match expected_findings in lab/inventory.yaml (C6)
+#   title         one short line the user sees
+#   severity      high | medium | low | info
+#   device_types  optional; the rule only applies to these types (decision D3)
+#   match         port, service, product or version_below
+#   explanation   why it is risky, in plain language
+#   fix           what the user can do about it
+#   references    links, optional
+#
+# Every rule needs a lab device that triggers it and one that does not (TC-10).
+# RF-RDP, RF-VNC and RF-ADB have no lab device that triggers them yet.
+
+- id: RF-TELNET
+  title: Telnet is open
+  severity: high
+  match: { port: 23 }
+  explanation: Telnet sends passwords without encryption, so anyone on the network can read them.
+  fix: Turn off Telnet in the device's settings. Use the app or web page instead.
+  references: []
+
+- id: RF-FTP
+  title: FTP file sharing is open
+  severity: high
+  match: { port: 21 }
+  explanation: >-
+    FTP sends usernames, passwords and files without encryption, so anyone on the
+    network can read them.
+  fix: >-
+    Turn off FTP in the device's settings. Use the device's app or Windows file
+    sharing (SMB) instead.
+  references: []
+
+- id: RF-SMB
+  title: Windows file sharing is open
+  severity: medium
+  match: { port: 445 }
+  explanation: >-
+    Shared folders on this device can be reached by anything on your network. If a
+    computer here gets infected, it can read, lock or delete these files.
+  fix: >-
+    Make sure every shared folder needs a password, and turn off sharing for folders
+    you don't use. Keep the device's software up to date.
+  references: []
+
+- id: RF-HTTP-ADMIN
+  title: Settings page is not encrypted
+  severity: medium
+  device_types: [router, camera]
+  match: { port: 80 }
+  explanation: >-
+    The device's settings page uses plain HTTP, so the admin password is sent without
+    encryption when you log in.
+  fix: >-
+    Use the https:// version of the settings page if the device has one, change the
+    default admin password, and update the device's software.
+  references: []
+
+- id: RF-HTTP-PRINTER
+  title: Printer settings page is not encrypted
+  severity: low
+  device_types: [printer]
+  match: { port: 80 }
+  explanation: >-
+    Anyone on your network can open the printer's settings page. Without a password
+    they can change its settings or see what was printed.
+  fix: Set an admin password on the printer's settings page.
+  references: []
+
+- id: RF-UPNP
+  title: UPnP is turned on
+  severity: medium
+  match: { service: upnp }
+  explanation: >-
+    UPnP lets any app or device on your network open doors in your router to the
+    internet without asking you. Malware uses it to expose devices.
+  fix: >-
+    Turn off UPnP in the router's settings. If a game console or app stops working,
+    set up port forwarding for just that one device instead.
+  references: []
+
+- id: RF-MQTT
+  title: Smart home messages are not protected
+  severity: high
+  match: { port: 1883 }
+  explanation: >-
+    This device uses MQTT without encryption. Anyone on your network can read its
+    messages, and often send their own, for example to switch the device on or off.
+  fix: >-
+    Turn on a password and encryption (port 8883) in the device's or hub's settings,
+    or turn off local MQTT if you don't use it.
+  references: []
+
+- id: RF-RDP
+  title: Remote Desktop is open
+  severity: high
+  match: { port: 3389 }
+  explanation: >-
+    Remote Desktop lets someone control this computer over the network. It is one of
+    the most common ways attackers break in, especially with weak passwords.
+  fix: >-
+    Turn off Remote Desktop in the computer's settings if you don't use it. If you
+    do, use a strong password.
+  references: []
+
+- id: RF-VNC
+  title: Screen sharing (VNC) is open
+  severity: high
+  match: { port: 5900 }
+  explanation: >-
+    VNC lets someone see and control this device's screen over the network. Many VNC
+    setups use a weak password or none at all.
+  fix: >-
+    Turn off screen sharing if you don't use it. If you do, set a strong password.
+  references: []
+
+- id: RF-ADB
+  title: Android debugging is open
+  severity: high
+  match: { port: 5555 }
+  explanation: >-
+    This device (often a TV box or Android device) accepts debugging connections
+    over the network, which give full control of it with no password.
+  fix: >-
+    Turn off "ADB debugging" or "Network debugging" in the device's developer
+    options.
+  references: []
