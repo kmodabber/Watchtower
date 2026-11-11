@@ -1,4 +1,4 @@
-# Non-secret development settings. This file is safe to commit.
+# Non-secret development settings. This file is safe to commit. Never commit a real webhook
 interface = "eth0"
 db_path = "/workspace/var/watchtower.db"
 quick_interval_min = 5
