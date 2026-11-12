@@ -1,0 +1,15 @@
+# Network card to scan from.
+interface = "eth0"
+
+# Where the SQLite database lives.
+db_path = "var/watchtower.db"
+
+# Minutes between scans.
+quick_interval_min = 5
+full_interval_min = 15
+
+# Optional. Leave empty to disable Discord alerts.
+discord_webhook = ""
+
+# Link shown in alerts.
+dashboard_url = "http://localhost:8000"

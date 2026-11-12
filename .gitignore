@@ -3,8 +3,9 @@
 __pycache__/
 *.pyc
 
-# Secrets (Discord webhook etc. come from the environment)
+# Secrets (Discord webhook etc. come from the environment variables)
 .env
+watchtower.toml
 
 # Local docs
 *.local
