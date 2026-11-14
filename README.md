@@ -9,14 +9,33 @@ Home network scanner that finds devices, flags risky settings in plain language 
 Python 3.12 (same as the scanner dev container in `lab/Dockerfile.scanner`).
 
 ```sh
-uv sync                   # or: pip install "ruff==0.8.6" "pytest==8.3.4" "pyyaml==6.0.2"
-ruff check .              # lint
-ruff format .             # format (CI runs ruff format --check)
-pytest                    # unit tests
+uv sync                   # or: pip install -e . "ruff==0.8.6" "pytest==8.3.4" httpx
+uv run ruff check .       # lint
+uv run ruff format .      # format (CI runs ruff format --check)
+uv run pytest             # unit tests
 ```
 
 CI (`.github/workflows/ci.yml`) runs the same three checks on every pull request.
 Changes to `main` go through a pull request with one review.
+
+## Database and API
+
+The database is SQLite at `var/watchtower.db` (git-ignored). The schema (contract C2) is
+defined in `watchtower/store/models.py` and built by Alembic migrations.
+
+```sh
+uv run watchtower db seed   # create the database and fill it from the lab fixtures
+uv run watchtower web       # API on http://127.0.0.1:8000, try it at /docs
+uv run watchtower db upgrade   # apply new migrations to an existing database
+```
+
+To re-seed, delete `var/watchtower.db` first. Changing a model? Generate a migration and
+commit it with the change (CI fails if models and migrations disagree):
+
+```sh
+uv run alembic revision --autogenerate -m "what changed"
+uv run alembic upgrade head
+```
 
 ## Scan the test lab
 

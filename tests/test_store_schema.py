@@ -1,4 +1,7 @@
-"""WT-92: contract C2 (database schema v0) loads and accepts C1-shaped data."""
+"""WT-71 (WT-FR-20): the Alembic migrations build contract C2, and it accepts C1-shaped data.
+
+Started as the WT-92 schema v0 checks; they now run against the real migrations.
+"""
 
 import json
 import sqlite3
@@ -6,8 +9,9 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
+from alembic import command
 
-SCHEMA = Path(__file__).resolve().parents[1] / "watchtower/store/schema_v0.sql"
+from watchtower.store.db import alembic_config, make_engine, upgrade
 
 # A hand-written C1 scan result for the lab camera (see 05 section 3, C1).
 C1_SCAN = {
@@ -49,12 +53,36 @@ C1_SCAN = {
 
 
 @pytest.fixture
-def db() -> Iterator[sqlite3.Connection]:
-    conn = sqlite3.connect(":memory:")
+def db_path(tmp_path: Path) -> Path:
+    path = tmp_path / "watchtower.db"
+    upgrade(path)  # migrations on an empty database (PRD P2-04 contract test)
+    return path
+
+
+@pytest.fixture
+def db(db_path: Path) -> Iterator[sqlite3.Connection]:
+    conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA foreign_keys = ON")
-    conn.executescript(SCHEMA.read_text())
     yield conn
     conn.close()
+
+
+def test_models_and_migrations_agree(db_path: Path) -> None:
+    # Fails when a model changed without a new migration.
+    command.check(alembic_config(db_path))
+
+
+def test_upgrade_twice_is_harmless(db_path: Path) -> None:
+    upgrade(db_path)
+
+
+def test_app_connections_use_wal_foreign_keys_and_busy_timeout(db_path: Path) -> None:
+    engine = make_engine(db_path)
+    with engine.connect() as conn:
+        assert conn.exec_driver_sql("PRAGMA journal_mode").scalar() == "wal"
+        assert conn.exec_driver_sql("PRAGMA foreign_keys").scalar() == 1
+        assert conn.exec_driver_sql("PRAGMA busy_timeout").scalar() == 5000
+    engine.dispose()
 
 
 def store(conn: sqlite3.Connection, scan: dict) -> int:
