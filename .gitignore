@@ -2,6 +2,13 @@
 .venv/
 __pycache__/
 *.pyc
+*.egg-info/
+build/
+dist/
+uv.lock
+
+# OS files
+.DS_Store
 
 # Secrets (Discord webhook etc. come from the environment variables)
 .env
@@ -9,6 +16,7 @@ watchtower.toml
 
 # Local docs
 *.local
+.local.docs/
 
 # Local databases and runtime files (never commit scan results)
 var/
