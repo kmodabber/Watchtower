@@ -64,14 +64,26 @@ from pathlib import Path
 from typing import Any
 from xml.etree import ElementTree as ET
 
+
+class ScanParseError(ValueError):
+    """The input is not usable Nmap XML. A ValueError so existing callers still catch it."""
+
+
 # ---------------------------------------------------------------------------
 # Public helpers
 # ---------------------------------------------------------------------------
 
 
-def _ts_to_iso(unix_ts: str) -> str:
+def _int(value: str | None, what: str) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError) as exc:
+        raise ScanParseError(f"{what} must be a whole number, got {value!r}.") from exc
+
+
+def _ts_to_iso(unix_ts: str, what: str = "timestamp") -> str:
     """Convert a Unix timestamp string to an ISO-8601 UTC string."""
-    return datetime.fromtimestamp(int(unix_ts), tz=UTC).isoformat()
+    return datetime.fromtimestamp(_int(unix_ts, what), tz=UTC).isoformat()
 
 
 def _detect_profile(args: str) -> str:
@@ -143,10 +155,8 @@ def parse_nmap_xml(xml_path: str | Path, profile: str | None = None) -> dict[str
 
     Raises
     ------
-    ValueError
-        When the XML is missing required attributes or is structurally invalid.
-    ET.ParseError
-        When the file is not valid XML.
+    ScanParseError
+        When the file is not valid XML, or is missing what C1 needs (a ValueError).
     FileNotFoundError
         When *xml_path* does not exist.
     """
@@ -157,12 +167,12 @@ def parse_nmap_xml(xml_path: str | Path, profile: str | None = None) -> dict[str
     try:
         tree = ET.parse(xml_path)
     except ET.ParseError as exc:
-        raise ET.ParseError(f"Malformed XML in {xml_path}: {exc}") from exc
+        raise ScanParseError(f"Malformed XML in {xml_path}: {exc}") from exc
 
     root = tree.getroot()
 
     if root.tag != "nmaprun":
-        raise ValueError(
+        raise ScanParseError(
             f"Expected root element <nmaprun>, got <{root.tag}>. " "Is this a valid Nmap XML file?"
         )
 
@@ -170,21 +180,23 @@ def parse_nmap_xml(xml_path: str | Path, profile: str | None = None) -> dict[str
     args = root.get("args", "")
     nmap_version = root.get("version")
     if not nmap_version:
-        raise ValueError("Missing 'version' attribute on <nmaprun>.")
+        raise ScanParseError("Missing 'version' attribute on <nmaprun>.")
 
     start_ts = root.get("start")
     if not start_ts:
-        raise ValueError("Missing 'start' attribute on <nmaprun>.")
+        raise ScanParseError("Missing 'start' attribute on <nmaprun>.")
 
     finished_elem = root.find(".//runstats/finished")
     if finished_elem is None:
-        raise ValueError("Missing <runstats/finished> element.")
+        raise ScanParseError("Missing <runstats/finished> element.")
     finish_ts = finished_elem.get("time")
     if not finish_ts:
-        raise ValueError("Missing 'time' attribute on <finished>.")
+        raise ScanParseError("Missing 'time' attribute on <finished>.")
 
     resolved_profile = profile if profile in ("quick", "full") else _detect_profile(args)
     subnet = _extract_subnet(args)
+    if not subnet:
+        raise ScanParseError(f"No target subnet (e.g. 172.28.0.0/24) in the nmap args: {args!r}.")
 
     # ---- hosts --------------------------------------------------------------
     hosts: list[dict[str, Any]] = []
@@ -192,6 +204,10 @@ def parse_nmap_xml(xml_path: str | Path, profile: str | None = None) -> dict[str
     # <host> elements are direct children of <nmaprun>; <hosthint> elements
     # (present in full scans) are skipped because they carry no port data.
     for host_elem in root.findall("host"):
+        status_elem = host_elem.find("status")
+        if status_elem is not None and status_elem.get("state") != "up":
+            continue  # C1 lists only devices that answered
+
         ip: str | None = None
         mac: str | None = None
         vendor: str | None = None
@@ -205,7 +221,7 @@ def parse_nmap_xml(xml_path: str | Path, profile: str | None = None) -> dict[str
                 vendor = addr_elem.get("vendor")  # may be absent → None
 
         if not ip:
-            raise ValueError(f"Found a <host> element with no IPv4 address in {xml_path}.")
+            raise ScanParseError(f"Found a <host> element with no IPv4 address in {xml_path}.")
 
         # hostname – take the first PTR record if present
         hostname: str | None = None
@@ -227,6 +243,8 @@ def parse_nmap_xml(xml_path: str | Path, profile: str | None = None) -> dict[str
 
             state_elem = port_elem.find("state")
             state = state_elem.get("state") if state_elem is not None else None
+            if state != "open":
+                continue  # C1 keeps open ports only (closed, filtered, open|filtered dropped)
 
             service_elem = port_elem.find("service")
             service: str | None = None
@@ -239,7 +257,7 @@ def parse_nmap_xml(xml_path: str | Path, profile: str | None = None) -> dict[str
 
             ports.append(
                 {
-                    "port": int(portid) if portid is not None else None,
+                    "port": _int(portid, f"<port portid> on {ip}"),
                     "protocol": protocol,
                     "state": state,
                     "service": service,
@@ -264,8 +282,8 @@ def parse_nmap_xml(xml_path: str | Path, profile: str | None = None) -> dict[str
         "scan_id": str(uuid.uuid4()),
         "profile": resolved_profile,
         "subnet": subnet,
-        "started_at": _ts_to_iso(start_ts),
-        "finished_at": _ts_to_iso(finish_ts),
+        "started_at": _ts_to_iso(start_ts, "<nmaprun start>"),
+        "finished_at": _ts_to_iso(finish_ts, "<finished time>"),
         "nmap_version": nmap_version,
         "hosts": hosts,
     }
