@@ -13,6 +13,7 @@ from pathlib import Path
 import pytest
 
 from watchtower.scanner import scan_engine
+from watchtower.scanner.models import ScanResult
 from watchtower.scanner.nmap_parser import parse_nmap_xml
 from watchtower.scanner.scan_engine import FakeEngine, NmapEngine, ScanEngine
 
@@ -30,21 +31,26 @@ HOST_KEYS = {"ip", "mac", "vendor", "mac_randomised", "hostname", "os_guess", "p
 PORT_KEYS = {"port", "protocol", "state", "service", "product", "version"}
 
 
-def _without_scan_id(result: dict) -> dict:
+def _as_dict(result: ScanResult | dict) -> dict:
+    return result.to_dict() if isinstance(result, ScanResult) else result
+
+
+def _without_scan_id(result: ScanResult | dict) -> dict:
     # scan_id is a fresh UUID on every parse, so it can't be compared.
-    return {key: value for key, value in result.items() if key != "scan_id"}
+    return {key: value for key, value in _as_dict(result).items() if key != "scan_id"}
 
 
-def _assert_c1(result: dict, profile: str) -> None:
-    assert set(result) == C1_KEYS
-    assert result["profile"] == profile
-    uuid.UUID(result["scan_id"])
-    assert uuid.UUID(result["scan_id"]).version == 4
-    assert result["hosts"]
-    for host in result["hosts"]:
-        assert set(host) == HOST_KEYS
-        for port in host["ports"]:
-            assert set(port) == PORT_KEYS
+def _assert_c1(result: ScanResult, profile: str) -> None:
+    assert isinstance(result, ScanResult)
+    assert set(result.to_dict()) == C1_KEYS
+    assert result.profile == profile
+    uuid.UUID(result.scan_id)
+    assert uuid.UUID(result.scan_id).version == 4
+    assert result.hosts
+    for host in result.hosts:
+        assert set(host.to_dict()) == HOST_KEYS
+        for port in host.ports:
+            assert set(port.to_dict()) == PORT_KEYS
 
 
 @pytest.mark.parametrize("profile", ["quick", "full"])
@@ -63,29 +69,33 @@ def test_fake_engine_returns_saved_c1(profile: str) -> None:
 
 def test_fake_engine_ignores_target_and_replays_the_fixture() -> None:
     result = FakeEngine(FIXTURES).run("quick", "10.0.0.0/8")
-    assert result["subnet"] == "172.28.0.0/24"
-    assert [host["ip"] for host in result["hosts"]] == [
+    assert isinstance(result, ScanResult)
+    assert result.subnet == "172.28.0.0/24"
+    assert [host.ip for host in result.hosts] == [
         "172.28.0.1",
         "172.28.0.2",
         "172.28.0.3",
         "172.28.0.4",
         "172.28.0.5",
     ]
-    assert all(host["ports"] == [] for host in result["hosts"])
+    assert all(host.ports == [] for host in result.hosts)
 
 
 def test_full_fixture_keeps_service_details() -> None:
     result = FakeEngine(FIXTURES).run("full", "172.28.0.0/24")
-    router = next(host for host in result["hosts"] if host["ip"] == "172.28.0.2")
-    assert [port["port"] for port in router["ports"]] == [53, 80, 5000]
-    assert router["ports"][0]["product"] == "dnsmasq"
+    assert isinstance(result, ScanResult)
+    router = next(host for host in result.hosts if host.ip == "172.28.0.2")
+    assert [port.port for port in router.ports] == [53, 80, 5000]
+    assert router.ports[0].product == "dnsmasq"
 
 
 def test_each_request_gets_its_own_scan_id() -> None:
     engine = FakeEngine(FIXTURES)
     first = engine.run("quick", "172.28.0.0/24")
     second = engine.run("quick", "172.28.0.0/24")
-    assert first["scan_id"] != second["scan_id"]
+    assert isinstance(first, ScanResult)
+    assert isinstance(second, ScanResult)
+    assert first.scan_id != second.scan_id
     assert _without_scan_id(first) == _without_scan_id(second)
 
 
@@ -93,9 +103,10 @@ def test_custom_fixture_folder(tmp_path: Path) -> None:
     xml = FIXTURES / "lab-quick.xml"
     (tmp_path / "lab-quick.xml").write_text(xml.read_text(encoding="utf-8"), encoding="utf-8")
     result = FakeEngine(tmp_path).run("quick", "172.28.0.0/24")
-    assert result["profile"] == "quick"
-    assert result["nmap_version"] == "7.95"
-    assert len(result["hosts"]) == 5
+    assert isinstance(result, ScanResult)
+    assert result.profile == "quick"
+    assert result.nmap_version == "7.95"
+    assert len(result.hosts) == 5
 
 
 def test_missing_fixture_folder(tmp_path: Path) -> None:
@@ -162,7 +173,7 @@ def test_nmap_engine_parses_subprocess_xml_without_a_live_scan(
     assert seen[0][-1] == "172.28.0.0/24"
     assert "-oX" in seen[0]
     _assert_c1(result, profile)
-    assert result["subnet"] == "172.28.0.0/24"
+    assert result.subnet == "172.28.0.0/24"
 
 
 def test_nmap_engine_rejects_a_bad_profile_before_scanning(monkeypatch: pytest.MonkeyPatch) -> None:

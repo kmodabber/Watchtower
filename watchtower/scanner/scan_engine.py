@@ -6,12 +6,10 @@ be built and tested without scanning. :class:`NmapEngine` runs Nmap and parses
 it the same way; the lab test (WT-54) covers that path later.
 
 Until WT-62 lands, both engines use Joseph's parser v0 (WT-96,
-``parse_nmap_xml``).
-
-TODO(WT-103): C1 dataclasses are not in this repo (``main`` has no other
-branches, and nothing under ``watchtower/`` defines them). A scan result is the
-dict that parser already returns. Do not add a second field layout here.
-Replace this alias when the dataclasses land.
+``parse_nmap_xml``) and wrap the parser dict in :class:`ScanResult`. A
+:class:`~watchtower.scanner.models.ModelError` from parser output that does
+not fit the C1 shape is left to propagate; this branch has no ``ScanFailed``
+wrapper.
 """
 
 from __future__ import annotations
@@ -19,13 +17,10 @@ from __future__ import annotations
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Any, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
+from watchtower.scanner.models import ScanResult
 from watchtower.scanner.nmap_parser import parse_nmap_xml
-
-# TODO(WT-103): stand-in for the missing C1 dataclasses. Same object the
-# WT-96 parser returns; not a new contract.
-C1ScanResult = dict[str, Any]
 
 PROFILES = ("quick", "full")
 
@@ -66,7 +61,7 @@ def _require_target(target: str) -> None:
 class ScanEngine(Protocol):
     """Run one profile on one target and return a C1 scan result."""
 
-    def run(self, profile: str, target: str) -> C1ScanResult:
+    def run(self, profile: str, target: str) -> ScanResult:
         """Run ``profile`` (``quick`` or ``full``) against ``target``."""
 
 
@@ -84,7 +79,7 @@ class FakeEngine:
         if not self.fixture_dir.is_dir():
             raise NotADirectoryError(f"Fixture folder not found: {self.fixture_dir}")
 
-    def run(self, profile: str, target: str) -> C1ScanResult:
+    def run(self, profile: str, target: str) -> ScanResult:
         _require_profile(profile)
         _require_target(target)
         xml_path = self.fixture_dir / f"lab-{profile}.xml"
@@ -93,7 +88,7 @@ class FakeEngine:
                 f"No saved {profile} scan at {xml_path}. "
                 "Expected a WT-55 fixture named lab-<profile>.xml."
             )
-        return parse_nmap_xml(xml_path, profile=profile)
+        return ScanResult.from_dict(parse_nmap_xml(xml_path, profile=profile))
 
 
 class NmapEngine:
@@ -107,7 +102,7 @@ class NmapEngine:
         self.nmap = nmap
         self.timeout = timeout
 
-    def run(self, profile: str, target: str) -> C1ScanResult:
+    def run(self, profile: str, target: str) -> ScanResult:
         _require_profile(profile)
         _require_target(target)
         with tempfile.TemporaryDirectory(prefix="watchtower-nmap-") as tmp:
@@ -120,4 +115,4 @@ class NmapEngine:
                 text=True,
                 timeout=self.timeout,
             )
-            return parse_nmap_xml(xml_path, profile=profile)
+            return ScanResult.from_dict(parse_nmap_xml(xml_path, profile=profile))
