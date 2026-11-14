@@ -1,11 +1,12 @@
 """WT-FR-13: FakeEngine returns saved WT-55 scans in the C1 shape.
 
-NmapEngine is only checked where a stand-in subprocess writes XML. Nothing
-here starts Nmap or touches the network. The lab test (WT-54) covers the
-real binary.
+NmapEngine is only checked where a stand-in subprocess returns XML on stdout.
+Nothing here starts Nmap or touches the network. The lab test (WT-54) covers
+the real binary.
 """
 
 import json
+import logging
 import subprocess
 import uuid
 from pathlib import Path
@@ -13,9 +14,10 @@ from pathlib import Path
 import pytest
 
 from watchtower.scanner import scan_engine
+from watchtower.scanner.command_builder import build_command
 from watchtower.scanner.models import ScanResult
 from watchtower.scanner.nmap_parser import parse_nmap_xml
-from watchtower.scanner.scan_engine import FakeEngine, NmapEngine, ScanEngine
+from watchtower.scanner.scan_engine import FakeEngine, NmapEngine, ScanEngine, ScanFailed
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 C1_KEYS = {
@@ -145,35 +147,49 @@ def test_nmap_engine_is_the_same_interface() -> None:
 
 
 @pytest.mark.parametrize(
-    ("profile", "flag"),
-    [("quick", "-sn"), ("full", "-sV")],
+    ("profile", "timeout_seconds"),
+    [("quick", 120), ("full", 1800)],
 )
-def test_nmap_engine_parses_subprocess_xml_without_a_live_scan(
-    monkeypatch: pytest.MonkeyPatch, profile: str, flag: str
+def test_nmap_engine_parses_stdout_xml_without_a_live_scan(
+    monkeypatch: pytest.MonkeyPatch, profile: str, timeout_seconds: int
 ) -> None:
     seen: list[list[str]] = []
+    network = "172.28.0.0/24"
+    exclude_ip = "172.28.0.6"
+    xml = (FIXTURES / f"lab-{profile}.xml").read_text(encoding="utf-8")
 
     def fake_run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
         seen.append(argv)
-        assert kwargs["check"] is True
-        assert kwargs["timeout"] == 900
-        xml_path = Path(argv[argv.index("-oX") + 1])
-        xml_path.write_text(
-            (FIXTURES / "lab-quick.xml").read_text(encoding="utf-8"),
-            encoding="utf-8",
-        )
-        return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
+        assert kwargs["capture_output"] is True
+        assert kwargs["shell"] is False
+        assert kwargs["timeout"] == timeout_seconds
+        # XML is stdout from `-oX -`, not a path written beside the command.
+        assert argv[argv.index("-oX") + 1] == "-"
+        return subprocess.CompletedProcess(argv, 0, stdout=xml, stderr="")
 
     monkeypatch.setattr(scan_engine.subprocess, "run", fake_run)
-    result = NmapEngine().run(profile, "172.28.0.0/24")
+    result = NmapEngine(exclude_ip=exclude_ip).run(profile, network)
 
-    assert len(seen) == 1
-    assert seen[0][0] == "nmap"
-    assert flag in seen[0]
-    assert seen[0][-1] == "172.28.0.0/24"
-    assert "-oX" in seen[0]
+    assert seen == [build_command(profile, network, exclude_ip)]
     _assert_c1(result, profile)
     assert result.subnet == "172.28.0.0/24"
+
+
+def test_custom_nmap_binary_keeps_build_command_flags(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: list[list[str]] = []
+    network = "172.28.0.0/24"
+    exclude_ip = "172.28.0.6"
+    xml = (FIXTURES / "lab-quick.xml").read_text(encoding="utf-8")
+
+    def fake_run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        seen.append(list(argv))
+        return subprocess.CompletedProcess(argv, 0, stdout=xml, stderr="")
+
+    monkeypatch.setattr(scan_engine.subprocess, "run", fake_run)
+    NmapEngine(nmap="/opt/nmap", exclude_ip=exclude_ip).run("quick", network)
+
+    expected = build_command("quick", network, exclude_ip)
+    assert seen == [["/opt/nmap", *expected[1:]]]
 
 
 def test_nmap_engine_rejects_a_bad_profile_before_scanning(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -183,3 +199,51 @@ def test_nmap_engine_rejects_a_bad_profile_before_scanning(monkeypatch: pytest.M
     monkeypatch.setattr(scan_engine.subprocess, "run", fail_run)
     with pytest.raises(ValueError, match="profile"):
         NmapEngine().run("deep", "172.28.0.0/24")
+
+
+@pytest.mark.parametrize("exclude_ip", [None, "", "-sS", "172.28.0.6 extra"])
+def test_nmap_engine_rejects_bad_exclude_ip_before_scanning(
+    monkeypatch: pytest.MonkeyPatch, exclude_ip: str | None
+) -> None:
+    def fail_run(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("nmap must not be started")
+
+    monkeypatch.setattr(scan_engine.subprocess, "run", fail_run)
+    with pytest.raises(ValueError, match="exclude_ip"):
+        NmapEngine(exclude_ip=exclude_ip).run("quick", "172.28.0.0/24")
+
+
+@pytest.mark.parametrize(
+    ("profile", "timeout_seconds"),
+    [("quick", 120), ("full", 1800)],
+)
+def test_nmap_engine_timeout_fails_the_scan(
+    monkeypatch: pytest.MonkeyPatch, profile: str, timeout_seconds: int
+) -> None:
+    xml = (FIXTURES / f"lab-{profile}.xml").read_text(encoding="utf-8")
+
+    def fake_run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        assert kwargs["timeout"] == timeout_seconds
+        assert kwargs["shell"] is False
+        raise subprocess.TimeoutExpired(cmd=argv, timeout=timeout_seconds, output=xml)
+
+    monkeypatch.setattr(scan_engine.subprocess, "run", fake_run)
+    with pytest.raises(ScanFailed, match="timed out") as caught:
+        NmapEngine(exclude_ip="172.28.0.6").run(profile, "172.28.0.0/24")
+    assert isinstance(caught.value.__cause__, subprocess.TimeoutExpired)
+
+
+def test_nmap_engine_nonzero_exit_logs_stderr_and_fails(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    xml = (FIXTURES / "lab-full.xml").read_text(encoding="utf-8")
+    stderr = "nmap: simulated failure while scanning"
+
+    def fake_run(argv: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(argv, 1, stdout=xml, stderr=stderr)
+
+    monkeypatch.setattr(scan_engine.subprocess, "run", fake_run)
+    with caplog.at_level(logging.ERROR):
+        with pytest.raises(ScanFailed, match="exit code 1"):
+            NmapEngine(exclude_ip="172.28.0.6").run("full", "172.28.0.0/24")
+    assert stderr in caplog.text
