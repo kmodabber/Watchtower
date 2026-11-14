@@ -204,6 +204,10 @@ def parse_nmap_xml(xml_path: str | Path, profile: str | None = None) -> dict[str
     # <host> elements are direct children of <nmaprun>; <hosthint> elements
     # (present in full scans) are skipped because they carry no port data.
     for host_elem in root.findall("host"):
+        status_elem = host_elem.find("status")
+        if status_elem is not None and status_elem.get("state") != "up":
+            continue  # C1 lists only devices that answered
+
         ip: str | None = None
         mac: str | None = None
         vendor: str | None = None
@@ -239,6 +243,8 @@ def parse_nmap_xml(xml_path: str | Path, profile: str | None = None) -> dict[str
 
             state_elem = port_elem.find("state")
             state = state_elem.get("state") if state_elem is not None else None
+            if state != "open":
+                continue  # C1 keeps open ports only (closed, filtered, open|filtered dropped)
 
             service_elem = port_elem.find("service")
             service: str | None = None

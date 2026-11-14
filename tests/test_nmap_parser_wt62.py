@@ -84,3 +84,38 @@ def test_port_without_number(tmp_path: Path) -> None:
 def test_missing_file_is_still_file_not_found(tmp_path: Path) -> None:
     with pytest.raises(FileNotFoundError):
         parse_nmap_xml(tmp_path / "nope.xml")
+
+
+def test_only_hosts_that_are_up(tmp_path: Path) -> None:
+    result = parse_nmap_xml(_xml(tmp_path, _host(status="up") + _host(status="down")))
+    assert len(result["hosts"]) == 1
+
+
+def test_only_open_ports(tmp_path: Path) -> None:
+    ports = "".join(
+        f'<port protocol="tcp" portid="{n}"><state state="{state}"/></port>'
+        for n, state in [(22, "open"), (23, "closed"), (80, "filtered"), (161, "open|filtered")]
+    )
+    result = parse_nmap_xml(_xml(tmp_path, _host(ports)))
+    assert [p["port"] for p in result["hosts"][0]["ports"]] == [22]
+
+
+def test_host_without_mac_is_fine(tmp_path: Path) -> None:
+    # Nmap can't see the MAC of the machine it runs on.
+    host = parse_nmap_xml(_xml(tmp_path, _host()))["hosts"][0]
+    assert host["mac"] is None and host["vendor"] is None and host["mac_randomised"] is False
+
+
+def test_quick_scan_without_ports_element(tmp_path: Path) -> None:
+    header = HEADER.replace("-sS -sV", "-sn")
+    body = '<host><status state="up"/><address addr="172.28.0.9" addrtype="ipv4"/></host>'
+    result = parse_nmap_xml(_xml(tmp_path, body, header=header))
+    assert result["profile"] == "quick"
+    assert result["hosts"][0]["ports"] == []
+
+
+def test_service_name_without_product(tmp_path: Path) -> None:
+    # Version detection failed: Nmap still guesses the name from the port number.
+    port = '<port protocol="tcp" portid="554"><state state="open"/><service name="rtsp"/></port>'
+    p = parse_nmap_xml(_xml(tmp_path, _host(port)))["hosts"][0]["ports"][0]
+    assert (p["service"], p["product"], p["version"]) == ("rtsp", None, None)
