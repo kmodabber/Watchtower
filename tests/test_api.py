@@ -69,7 +69,7 @@ def test_findings_worst_first_and_filters(client: TestClient) -> None:
 def test_changes_newest_first_and_since(client: TestClient) -> None:
     changes = client.get("/api/changes").json()
     assert changes[0]["at"] >= changes[-1]["at"]
-    after_quick = client.get("/api/changes", params={"since": "2026-11-06T08:00:00Z"}).json()
+    after_quick = client.get("/api/changes", params={"since": "2026-11-19T04:18:00Z"}).json()
     assert after_quick and all(c["kind"] == "new_finding" for c in after_quick)
     assert client.get("/api/changes", params={"since": "yesterday"}).status_code == 422
 
