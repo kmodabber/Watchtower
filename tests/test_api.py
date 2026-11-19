@@ -16,7 +16,7 @@ CAMERA_MAC = "c0:56:e3:12:34:56"
 @pytest.fixture(scope="module")
 def client(tmp_path_factory: pytest.TempPathFactory) -> Iterator[TestClient]:
     db = tmp_path_factory.mktemp("api") / "watchtower.db"
-    assert seed(db) == 5  # five lab devices in the saved fixtures
+    assert seed(db) == 9  # nine lab devices in the saved fixtures
     with TestClient(create_app(db)) as c:
         yield c
 
@@ -28,12 +28,12 @@ def _camera(client: TestClient) -> dict:
 def test_health(client: TestClient) -> None:
     body = client.get("/api/health").json()
     assert body["database_ok"] is True
-    assert body["last_scan_at"] == "2026-11-06T08:09:46Z"
+    assert body["last_scan_at"] == "2026-11-19T04:22:54Z"
 
 
 def test_devices_worst_first_with_highest_severity(client: TestClient) -> None:
     devices = client.get("/api/devices").json()
-    assert len(devices) == 5
+    assert len(devices) == 9
     assert devices[0]["highest_severity"] == "high"
     camera = _camera(client)
     assert camera["type"] == "camera"
