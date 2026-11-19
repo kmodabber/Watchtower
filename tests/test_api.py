@@ -16,7 +16,7 @@ CAMERA_MAC = "c0:56:e3:12:34:56"
 @pytest.fixture(scope="module")
 def client(tmp_path_factory: pytest.TempPathFactory) -> Iterator[TestClient]:
     db = tmp_path_factory.mktemp("api") / "watchtower.db"
-    assert seed(db) == 9  # nine lab devices in the saved fixtures
+    assert seed(db) == 10
     with TestClient(create_app(db)) as c:
         yield c
 
@@ -28,12 +28,12 @@ def _camera(client: TestClient) -> dict:
 def test_health(client: TestClient) -> None:
     body = client.get("/api/health").json()
     assert body["database_ok"] is True
-    assert body["last_scan_at"] == "2026-11-19T04:22:54Z"
+    assert body["last_scan_at"] == "2026-11-19T06:01:41Z"
 
 
 def test_devices_worst_first_with_highest_severity(client: TestClient) -> None:
     devices = client.get("/api/devices").json()
-    assert len(devices) == 9
+    assert len(devices) == 10
     assert devices[0]["highest_severity"] == "high"
     camera = _camera(client)
     assert camera["type"] == "camera"
@@ -69,7 +69,7 @@ def test_findings_worst_first_and_filters(client: TestClient) -> None:
 def test_changes_newest_first_and_since(client: TestClient) -> None:
     changes = client.get("/api/changes").json()
     assert changes[0]["at"] >= changes[-1]["at"]
-    after_quick = client.get("/api/changes", params={"since": "2026-11-19T04:18:00Z"}).json()
+    after_quick = client.get("/api/changes", params={"since": "2026-11-19T05:58:00Z"}).json()
     assert after_quick and all(c["kind"] == "new_finding" for c in after_quick)
     assert client.get("/api/changes", params={"since": "yesterday"}).status_code == 422
 

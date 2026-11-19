@@ -1,9 +1,9 @@
 {
-  "scan_id": "f6296095-7c0a-4cd4-ac10-2321e7bcf8e8",
+  "scan_id": "05e982f1-cbae-49c9-9ede-59309e75c064",
   "profile": "full",
   "subnet": "172.28.0.0/24",
-  "started_at": "2026-11-19T04:20:56+00:00",
-  "finished_at": "2026-11-19T04:22:54+00:00",
+  "started_at": "2026-11-19T05:59:33+00:00",
+  "finished_at": "2026-11-19T06:01:41+00:00",
   "nmap_version": "7.95",
   "hosts": [
     {
@@ -188,6 +188,14 @@
       "os_guess": null,
       "ports": [
         {
+          "port": 5555,
+          "protocol": "tcp",
+          "state": "open",
+          "service": "tcpwrapped",
+          "product": null,
+          "version": null
+        },
+        {
           "port": 8008,
           "protocol": "tcp",
           "state": "open",
@@ -221,6 +229,32 @@
       "hostname": "lab-phone-1.lab_net",
       "os_guess": null,
       "ports": []
+    },
+    {
+      "ip": "172.28.0.10",
+      "mac": "00:14:22:99:00:0A",
+      "vendor": "Dell",
+      "mac_randomised": false,
+      "hostname": "lab-desktop-1.lab_net",
+      "os_guess": null,
+      "ports": [
+        {
+          "port": 3389,
+          "protocol": "tcp",
+          "state": "open",
+          "service": "tcpwrapped",
+          "product": null,
+          "version": null
+        },
+        {
+          "port": 5900,
+          "protocol": "tcp",
+          "state": "open",
+          "service": "vnc",
+          "product": null,
+          "version": null
+        }
+      ]
     }
   ]
 }
