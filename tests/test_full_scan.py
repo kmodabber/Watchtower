@@ -22,20 +22,9 @@ from watchtower.scanner.scan_engine import NmapEngine
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 INVENTORY_PATH = ROOT / "lab" / "inventory.yaml"
-FULL_INVENTORY_XML = FIXTURES / "lab-full.xml"
+FULL_INVENTORY_XML = FIXTURES / "lab-full-inventory.xml"
 LAB_NETWORK = "172.28.0.0/24"
-SCANNER_IP = (
-    "172.28.0.20"  # Fatima: devices are from .2 to .9 so scanner is .20 to avoid collisions
-)
-
-
-# TEMPORARY: MQTT port 1883 is listening on the smart plug, but the
-# current full profile uses --top-ports 1000 and does not scan it.
-# Cliff is updating the profile to include this port.
-# Remove this exception and regenerate the fixture when that change lands.
-PENDING_PROFILE_PORTS = {
-    ("smart-plug", 1883),
-}
+SCANNER_IP = "172.28.0.6"
 
 # Product and version the current lab images expose, as recorded in the
 # WT-55 lab-full.xml -sV output. Not every open port has these: BusyBox httpd
@@ -97,9 +86,6 @@ def test_tc06_full_scan_finds_every_inventory_port(monkeypatch: pytest.MonkeyPat
         expected_ports = _open_tcp_ports(parsed_by_mac[mac])
 
         for port_number in device["ports"]:
-            # Temporary stand-in until the full profile includes MQTT/1883.
-            if (name, port_number) in PENDING_PROFILE_PORTS:
-                continue
             assert port_number in found_ports, f"{name} is missing open TCP port {port_number}"
             port = found_ports[port_number]
             assert port.service, f"{name} port {port_number} has no service name"

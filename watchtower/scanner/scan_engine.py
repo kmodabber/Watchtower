@@ -9,12 +9,12 @@ Nmap argv is built only by :func:`watchtower.scanner.command_builder.build_comma
 Quick scans stop after 120 seconds and full scans after 30 minutes. A timeout
 or a non-zero Nmap exit raises :class:`ScanFailed` instead of a C1 result.
 
-Until WT-62 lands, both engines use Joseph's parser v0 (WT-96,
-``parse_nmap_xml``) and wrap the parser dict in :class:`ScanResult`. A
-:class:`~watchtower.scanner.models.ModelError` from parser output that does
-not fit the C1 shape is left to propagate. The command uses ``-oX -`` so XML
-arrives on stdout; the engine writes that stdout to a temp file because the
-parser reads a path.
+Both engines use the WT-62 parser (``parse_nmap_xml``) and wrap the parser
+dict in :class:`ScanResult`. A :class:`~watchtower.scanner.nmap_parser.ScanParseError`
+from broken XML, or a :class:`~watchtower.scanner.models.ModelError` from
+parser output that does not fit the C1 shape, is left to propagate. The
+command uses ``-oX -`` so XML arrives on stdout; the engine writes that
+stdout to a temp file because the parser reads a path.
 """
 
 from __future__ import annotations
