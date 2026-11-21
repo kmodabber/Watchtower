@@ -1,0 +1,86 @@
+# Device classification clues. Points accumulate separately for each device type.
+# A clue matches only when all of its conditions are satisfied.
+# Type names follow the labels in lab/inventory.yaml.
+
+- type: camera
+  points: 3
+  vendor_contains: [Hikvision, Dahua, Reolink]
+  reason: camera maker
+
+- type: camera
+  points: 3
+  port: 554
+  reason: RTSP video port
+
+- type: printer
+  points: 3
+  port: [9100, 631]
+  reason: printer service port
+
+- type: printer
+  points: 2
+  vendor_contains: [Brother, Epson, Canon]
+  reason: printer maker
+
+- type: nas
+  points: 2
+  port: 445
+  reason: file sharing port
+
+- type: nas
+  points: 3
+  vendor_contains: [Synology, QNAP]
+  reason: NAS maker
+
+- type: smart-plug
+  points: 2
+  port: 1883
+  reason: MQTT smart-home service
+
+- type: smart-plug
+  points: 2
+  vendor_contains: [Espressif, Tuya, TP-Link]
+  reason: smart-home device maker
+
+- type: smart-tv
+  points: 3
+  port: [8008, 8009]
+  reason: TV casting service port
+
+- type: smart-tv
+  points: 1
+  vendor_contains: [Samsung, LG, Roku]
+  reason: TV maker
+
+- type: router
+  points: 4
+  ports_all: [53, 80]
+  ip_ends_with: ".2"
+  reason: DNS and web admin on lab router address
+
+- type: desktop
+  points: 3
+  port: [3389, 5900]
+  reason: remote desktop or screen sharing port
+
+- type: desktop
+  points: 2
+  vendor_contains: [Dell, Lenovo]
+  reason: PC maker
+
+- type: phone
+  points: 3
+  mac_randomised: true
+  no_open_ports: true
+  reason: private MAC with no open ports
+
+- type: laptop
+  points: 3
+  mac_randomised: true
+  port: 22
+  reason: private MAC with SSH
+
+- type: phone
+  points: 4
+  hostname_contains: [iphone, android]
+  reason: phone hostname
