@@ -5,7 +5,7 @@
 #   title         one short line the user sees
 #   severity      high | medium | low | info
 #   device_types  optional; the rule only applies to these types (decision D3)
-#   match         port, service, product or version_below
+#   match         port, service,  or version_below
 #   explanation   why it is risky, in plain language
 #   fix           what the user can do about it
 #   references    links, optional
