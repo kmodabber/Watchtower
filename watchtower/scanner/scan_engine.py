@@ -25,7 +25,12 @@ import tempfile
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
-from watchtower.scanner.command_builder import PROFILES, build_command, require_argv_token
+from watchtower.scanner.command_builder import (
+    PROFILES,
+    build_command,
+    require_argv_token,
+    validate_command,
+)
 from watchtower.scanner.models import ScanResult
 from watchtower.scanner.nmap_parser import parse_nmap_xml
 
@@ -106,14 +111,14 @@ class NmapEngine:
         self.exclude_ip = exclude_ip
 
     def run(self, profile: str, target: str) -> ScanResult:
-        _require_profile(profile)
-        _require_target(target)
-        if self.exclude_ip is None:
-            raise ValueError("exclude_ip is required")
+        # A missing exclude_ip becomes "", which build_command refuses.
+        exclude_ip = self.exclude_ip or ""
         # Flags come only from build_command. argv[0] may be a custom binary.
-        command = build_command(profile, target, self.exclude_ip)
+        command = build_command(profile, target, exclude_ip)
         if self.nmap != command[0]:
             command = [self.nmap, *command[1:]]
+        # WT-76: refuse anything that is not the exact approved command.
+        validate_command(command, profile, target, exclude_ip)
         timeout_seconds = _PROFILE_TIMEOUT_SECONDS[profile]
         try:
             completed = subprocess.run(
