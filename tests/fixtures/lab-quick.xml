@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE nmaprun>
 <?xml-stylesheet href="file:///usr/bin/../share/nmap/nmap.xsl" type="text/xsl"?>
-<!-- Nmap 7.95 scan initiated Thu Nov 19 04:15:38 2026 as: nmap -sn -&#45;privileged -oX /workspace/tests/fixtures/lab-quick.xml -&#45;exclude 172.28.0.10 172.28.0.0/24 -->
-<nmaprun scanner="nmap" args="nmap -sn -&#45;privileged -oX /workspace/tests/fixtures/lab-quick.xml -&#45;exclude 172.28.0.10 172.28.0.0/24" start="1795061738" startstr="Thu Nov 19 04:15:38 2026" version="7.95" xmloutputversion="1.05">
+<!-- Nmap 7.95 scan initiated Thu Nov 19 05:57:01 2026 as: nmap -sn -&#45;privileged -oX /workspace/tests/fixtures/lab-quick.xml -&#45;exclude 172.28.0.11 172.28.0.0/24 -->
+<nmaprun scanner="nmap" args="nmap -sn -&#45;privileged -oX /workspace/tests/fixtures/lab-quick.xml -&#45;exclude 172.28.0.11 172.28.0.0/24" start="1795067821" startstr="Thu Nov 19 05:57:01 2026" version="7.95" xmloutputversion="1.05">
 <verbose level="0"/>
 <debugging level="0"/>
 <host><status state="up" reason="arp-response" reason_ttl="0"/>
@@ -10,7 +10,7 @@
 <address addr="CA:37:7F:86:EE:DD" addrtype="mac"/>
 <hostnames>
 </hostnames>
-<times srtt="250" rttvar="5000" to="100000"/>
+<times srtt="188" rttvar="5000" to="100000"/>
 </host>
 <host><status state="up" reason="arp-response" reason_ttl="0"/>
 <address addr="172.28.0.2" addrtype="ipv4"/>
@@ -18,7 +18,7 @@
 <hostnames>
 <hostname name="lab-router-1.lab_net" type="PTR"/>
 </hostnames>
-<times srtt="32" rttvar="5000" to="100000"/>
+<times srtt="24" rttvar="5000" to="100000"/>
 </host>
 <host><status state="up" reason="arp-response" reason_ttl="0"/>
 <address addr="172.28.0.3" addrtype="ipv4"/>
@@ -26,7 +26,7 @@
 <hostnames>
 <hostname name="lab-camera-1.lab_net" type="PTR"/>
 </hostnames>
-<times srtt="25" rttvar="5000" to="100000"/>
+<times srtt="15" rttvar="5000" to="100000"/>
 </host>
 <host><status state="up" reason="arp-response" reason_ttl="0"/>
 <address addr="172.28.0.4" addrtype="ipv4"/>
@@ -34,7 +34,7 @@
 <hostnames>
 <hostname name="lab-laptop-1.lab_net" type="PTR"/>
 </hostnames>
-<times srtt="32" rttvar="5000" to="100000"/>
+<times srtt="10" rttvar="5000" to="100000"/>
 </host>
 <host><status state="up" reason="arp-response" reason_ttl="0"/>
 <address addr="172.28.0.5" addrtype="ipv4"/>
@@ -42,7 +42,7 @@
 <hostnames>
 <hostname name="lab-nas-1.lab_net" type="PTR"/>
 </hostnames>
-<times srtt="35" rttvar="5000" to="100000"/>
+<times srtt="28" rttvar="5000" to="100000"/>
 </host>
 <host><status state="up" reason="arp-response" reason_ttl="0"/>
 <address addr="172.28.0.6" addrtype="ipv4"/>
@@ -50,7 +50,7 @@
 <hostnames>
 <hostname name="lab-printer-1.lab_net" type="PTR"/>
 </hostnames>
-<times srtt="28" rttvar="5000" to="100000"/>
+<times srtt="37" rttvar="5000" to="100000"/>
 </host>
 <host><status state="up" reason="arp-response" reason_ttl="0"/>
 <address addr="172.28.0.7" addrtype="ipv4"/>
@@ -58,7 +58,7 @@
 <hostnames>
 <hostname name="lab-smart-plug-1.lab_net" type="PTR"/>
 </hostnames>
-<times srtt="22" rttvar="5000" to="100000"/>
+<times srtt="9" rttvar="5000" to="100000"/>
 </host>
 <host><status state="up" reason="arp-response" reason_ttl="0"/>
 <address addr="172.28.0.8" addrtype="ipv4"/>
@@ -66,7 +66,7 @@
 <hostnames>
 <hostname name="lab-smart-tv-1.lab_net" type="PTR"/>
 </hostnames>
-<times srtt="29" rttvar="5000" to="100000"/>
+<times srtt="14" rttvar="5000" to="100000"/>
 </host>
 <host><status state="up" reason="arp-response" reason_ttl="0"/>
 <address addr="172.28.0.9" addrtype="ipv4"/>
@@ -74,8 +74,16 @@
 <hostnames>
 <hostname name="lab-phone-1.lab_net" type="PTR"/>
 </hostnames>
-<times srtt="113" rttvar="1292" to="100000"/>
+<times srtt="20" rttvar="5000" to="100000"/>
 </host>
-<runstats><finished time="1795061741" timestr="Thu Nov 19 04:15:41 2026" summary="Nmap done at Thu Nov 19 04:15:41 2026; 255 IP addresses (9 hosts up) scanned in 2.08 seconds" elapsed="2.08" exit="success"/><hosts up="9" down="246" total="255"/>
+<host><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="172.28.0.10" addrtype="ipv4"/>
+<address addr="00:14:22:99:00:0A" addrtype="mac" vendor="Dell"/>
+<hostnames>
+<hostname name="lab-desktop-1.lab_net" type="PTR"/>
+</hostnames>
+<times srtt="99" rttvar="1275" to="100000"/>
+</host>
+<runstats><finished time="1795067823" timestr="Thu Nov 19 05:57:03 2026" summary="Nmap done at Thu Nov 19 05:57:03 2026; 255 IP addresses (10 hosts up) scanned in 2.04 seconds" elapsed="2.04" exit="success"/><hosts up="10" down="245" total="255"/>
 </runstats>
 </nmaprun>

@@ -76,6 +76,16 @@ services:
         ipv4_address: 172.28.0.9
         mac_address: "a6:5e:90:3d:71:c8"  # randomised (locally administered)
 
+  desktop:
+    <<: *device
+    hostname: desktop
+    volumes:
+      - ./shared/desktop:/etc/lab:ro
+    networks:
+      lab_net:
+        ipv4_address: 172.28.0.10
+        mac_address: "00:14:22:99:00:0a"  # vendor OUI (Dell)
+
   # The NAS has its own image because it needs to run a real FTP server and a real SMB server, not just a banner. The NAS image is based on Alpine Linux, but it installs vsftpd and samba.
   #It does not use the cap_drop settings  
   nas:
@@ -116,7 +126,7 @@ services:
 
 networks:
   lab_net:
-    name: lab_net   # fixed name so the scanner project can join it
+    name: lab_net
     driver: bridge
     internal: true
     ipam:

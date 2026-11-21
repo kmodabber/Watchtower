@@ -24,10 +24,13 @@ FIXTURES = Path(__file__).resolve().parent / "fixtures"
 INVENTORY_PATH = ROOT / "lab" / "inventory.yaml"
 FULL_INVENTORY_XML = FIXTURES / "lab-full-inventory.xml"
 LAB_NETWORK = "172.28.0.0/24"
-SCANNER_IP = "172.28.0.6"
+SCANNER_IP = (
+    "172.28.0.20"  # Fatima: devices are from .2 to .9 so scanner is .20 to avoid collisions
+)
+
 
 # Product and version the current lab images expose, as recorded in the
-# WT-55 lab-full.xml -sV output. Not every open port has these: BusyBox httpd
+# WT-55 lab-full-inventory.xml -sV output. Not every open port has these: BusyBox httpd
 # and the socat SSH/RTSP banners often come back as a service name only.
 LAB_SET_SERVICE = {
     ("router", 53): ("domain", "dnsmasq", "2.90"),

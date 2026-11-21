@@ -86,6 +86,7 @@ def test_fake_engine_ignores_target_and_replays_the_fixture() -> None:
         "172.28.0.7",
         "172.28.0.8",
         "172.28.0.9",
+        "172.28.0.10",
     ]
     assert all(host.ports == [] for host in result.hosts)
 
@@ -115,7 +116,7 @@ def test_custom_fixture_folder(tmp_path: Path) -> None:
     assert isinstance(result, ScanResult)
     assert result.profile == "quick"
     assert result.nmap_version == "7.95"
-    assert len(result.hosts) == 9
+    assert len(result.hosts) == 10
 
 
 def test_missing_fixture_folder(tmp_path: Path) -> None:

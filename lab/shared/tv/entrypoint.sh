@@ -10,3 +10,6 @@ socat TCP-LISTEN:8443,fork,reuseaddr SYSTEM:'true' &
 
 # Announce _googlecast._tcp over mDNS.
 python3 /etc/lab/announce.py &
+
+# Port 5555 (ADB): fake listener only, never a real adb daemon.
+socat TCP-LISTEN:5555,fork,reuseaddr SYSTEM:'true' &

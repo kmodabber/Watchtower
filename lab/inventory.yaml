@@ -41,8 +41,14 @@ devices:
   - name: smart-tv
     mac: "f4:f5:d8:88:00:08"
     type: smart-tv
-    ports: [8008, 8009, 8443]
-    expected_findings: []     # clean
+    ports: [8008, 8009, 8443, 5555]
+    expected_findings: [RF-ADB]
+
+  - name: desktop
+    mac: "00:14:22:99:00:0a"
+    type: desktop
+    ports: [3389, 5900]
+    expected_findings: [RF-RDP, RF-VNC]
 
   - name: phone
     mac: "a6:5e:90:3d:71:c8"
