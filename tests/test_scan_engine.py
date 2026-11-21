@@ -74,15 +74,15 @@ def test_fake_engine_ignores_target_and_replays_the_fixture() -> None:
     assert isinstance(result, ScanResult)
     assert result.subnet == "172.28.0.0/24"
     assert [host.ip for host in result.hosts] == [
-    "172.28.0.1", 
-    "172.28.0.2", 
-    "172.28.0.3", 
-    "172.28.0.4", 
+    "172.28.0.1",
+    "172.28.0.2",
+    "172.28.0.3",
+    "172.28.0.4",
     "172.28.0.5",
-    "172.28.0.6", 
-    "172.28.0.7", 
-    "172.28.0.8", 
-    "172.28.0.9", 
+    "172.28.0.6",
+    "172.28.0.7",
+    "172.28.0.8",
+    "172.28.0.9",
     "172.28.0.10",
 ]
     assert all(host.ports == [] for host in result.hosts)
