@@ -53,7 +53,7 @@ jobs:
         # The repo is mounted at /workspace, not installed in the image
         run: >
           docker compose -f lab/docker-compose.yml --profile dev run --rm -T
-          -e PYTHONPATH=/workspace scanner python -m pytest -m lab -v
+          scanner python -m pytest tests/test_lab.py -m lab -v
 
       - name: Logs on failure
         if: failure()

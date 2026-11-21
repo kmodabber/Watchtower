@@ -306,7 +306,7 @@ def test_nmap_engine_timeout_kills_the_child(
     monkeypatch.setattr(scan_engine.subprocess, "run", run_sleeper)
     started = time.monotonic()
     with pytest.raises(ScanFailed, match="timed out") as caught:
-        NmapEngine(exclude_ip="172.28.0.6").run("full", "172.28.0.0/24")
+        NmapEngine(exclude_ip="172.28.0.20").run("full", "172.28.0.0/24")
     assert time.monotonic() - started < 10
     assert isinstance(caught.value.__cause__, subprocess.TimeoutExpired)
     pid = int(pid_file.read_text(encoding="utf-8"))
