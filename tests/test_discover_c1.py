@@ -12,7 +12,7 @@ from lab import discover_c1
 
 NMAP_XML = """<?xml version="1.0"?>
 <nmaprun scanner="nmap"
-  args="nmap -sn --privileged -oX /tmp/quick.xml --exclude 172.28.0.6 172.28.0.0/24"
+  args="nmap -sn --privileged -oX /tmp/quick.xml --exclude 172.28.0.20 172.28.0.0/24"
   version="7.95" start="1794000000">
   <host><status state="up"/><address addr="172.28.0.2" addrtype="ipv4"/>
     <address addr="50:C7:BF:11:00:02" addrtype="mac" vendor="TP-Link Technologies"/>
@@ -32,10 +32,10 @@ def test_quick_scan_passes_xml_to_c1_parser(monkeypatch):
             return subprocess.CompletedProcess(
                 cmd,
                 0,
-                stdout="11: eth0@if30 inet 172.28.0.6/24 brd 172.28.0.255 scope global eth0\n",
+                stdout="11: eth0@if30 inet 172.28.0.20/24 brd 172.28.0.255 scope global eth0\n",
             )
         assert cmd[:4] == ["nmap", "-sn", "--privileged", "-oX"]
-        assert cmd[-3:] == ["--exclude", "172.28.0.6", "172.28.0.0/24"]
+        assert cmd[-3:] == ["--exclude", "172.28.0.20", "172.28.0.0/24"]
         Path(cmd[4]).write_text(NMAP_XML, encoding="utf-8")
         return subprocess.CompletedProcess(cmd, 0, stdout="")
 
@@ -102,7 +102,7 @@ def test_discovery_output_through_real_parser(monkeypatch):
     def fake_run(cmd, **kwargs):
         if cmd[0] == "ip":
             return subprocess.CompletedProcess(
-                cmd, 0, stdout="11: eth0 inet 172.28.0.6/24 scope global eth0\n"
+                cmd, 0, stdout="11: eth0 inet 172.28.0.20/24 scope global eth0\n"
             )
         Path(cmd[4]).write_text(NMAP_XML, encoding="utf-8")
         return subprocess.CompletedProcess(cmd, 0, stdout="")

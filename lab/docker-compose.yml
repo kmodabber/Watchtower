@@ -122,7 +122,8 @@ services:
     environment:
       WATCHTOWER_CONFIG: /workspace/lab/watchtower.dev.toml
     networks:
-      - lab_net
+      lab_net:
+        ipv4_address: 172.28.0.20 # clear of devices and leaves room for more
 
 networks:
   lab_net:
