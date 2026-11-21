@@ -1,6 +1,5 @@
 # WT-93: CI skeleton. Runs lint and unit tests on every pull request and on main.
-# The lab test (start the lab, scan it, compare with inventory.yaml) joins in
-# Stage 2 as its own job (WT-FR-03, Fatima).
+# WT-54: The lab test (start the lab, scan it, compare with inventory.yaml) 
 name: CI
 
 on:
@@ -33,4 +32,33 @@ jobs:
         run: ruff format --check .
 
       - name: Unit tests (pytest)
-        run: pytest
+        run: pytest -m "not lab"
+        
+  lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start the lab
+        run: docker compose -f lab/docker-compose.yml up -d --build
+
+      - name: Build the scanner image (local only, never pushed)
+        run: docker compose -f lab/docker-compose.yml --profile dev build scanner
+
+      - name: Wait for services
+        run: sleep 20
+
+      - name: Lab test (inside the scanner container)
+        # The repo is mounted at /workspace, not installed in the image
+        run: >
+          docker compose -f lab/docker-compose.yml --profile dev run --rm -T
+          -e PYTHONPATH=/workspace scanner python -m pytest -m lab -v
+
+      - name: Logs on failure
+        if: failure()
+        run: docker compose -f lab/docker-compose.yml --profile dev logs
+
+      - name: Stop the lab
+        if: always()
+        run: docker compose -f lab/docker-compose.yml --profile dev down --remove-orphans
