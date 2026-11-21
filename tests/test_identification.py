@@ -66,7 +66,7 @@ def test_camera_matches_vendor_and_rtsp_clues() -> None:
     assert guess.reasons == ["camera maker", "RTSP video port"]
 
 
-def test_router_identified_without_gateway_ip() -> None:
+def test_router_identified_on_lab_ip() -> None:
     router = Host(
         ip="172.28.0.2",
         vendor="TP-Link",
@@ -75,29 +75,48 @@ def test_router_identified_without_gateway_ip() -> None:
             Port(80, "tcp", "open"),
         ],
     )
+
     guess = identify_host(router)
 
     assert guess.type == "router"
     assert guess.confidence == CONFIDENCE_VALUES["medium"]
-    assert guess.reasons == ["DNS and web administration services"]
+    assert guess.reasons == ["DNS and web admin on lab router address"]
 
 
-def test_desktop_identified_from_rdp_and_vnc() -> None:
+def test_desktop_identified_from_remote_access_and_vendor() -> None:
     desktop = Host(
         ip="172.28.0.10",
+        vendor="Dell",
         ports=[
             Port(3389, "tcp", "open"),
             Port(5900, "tcp", "open"),
         ],
     )
+
     guess = identify_host(desktop)
 
     assert guess.type == "desktop"
     assert guess.confidence == CONFIDENCE_VALUES["high"]
     assert guess.reasons == [
-        "RDP remote desktop port",
-        "VNC remote access port",
+        "remote desktop or screen sharing port",
+        "PC maker",
     ]
+
+
+@pytest.mark.parametrize("port_number", [3389, 5900])
+def test_desktop_identified_from_either_remote_access_port(
+    port_number: int,
+) -> None:
+    desktop = Host(
+        ip="192.168.1.50",
+        ports=[Port(port_number, "tcp", "open")],
+    )
+
+    guess = identify_host(desktop)
+
+    assert guess.type == "desktop"
+    assert guess.confidence == CONFIDENCE_VALUES["medium"]
+    assert guess.reasons == ["remote desktop or screen sharing port"]
 
 
 def test_no_match_returns_unknown_without_reasons() -> None:

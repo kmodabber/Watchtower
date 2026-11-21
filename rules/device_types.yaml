@@ -55,17 +55,18 @@
 - type: router
   points: 4
   ports_all: [53, 80]
-  reason: DNS and web administration services
+  ip_ends_with: ".2"
+  reason: DNS and web admin on lab router address
 
 - type: desktop
   points: 3
-  port: 3389
-  reason: RDP remote desktop port
+  port: [3389, 5900]
+  reason: remote desktop or screen sharing port
 
 - type: desktop
   points: 2
-  port: 5900
-  reason: VNC remote access port
+  vendor_contains: [Dell, Lenovo]
+  reason: PC maker
 
 - type: phone
   points: 3
