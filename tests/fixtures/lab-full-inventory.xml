@@ -91,6 +91,17 @@
 <port protocol="tcp" portid="8008"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="http" product="Google Chromecast httpd" method="probed" conf="10"/></port>
 <port protocol="tcp" portid="8009"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="ajp13" method="table" conf="3"/></port>
 <port protocol="tcp" portid="8443"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="https-alt" method="table" conf="3"/></port>
+<port protocol="tcp" portid="5555"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="unknown" method="table" conf="3"/></port>
+</ports>
+</host>
+
+<host starttime="1793952525" endtime="1793952586"><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="172.28.0.11" addrtype="ipv4"/>
+<address addr="00:14:22:99:00:0A" addrtype="mac"/>
+<hostnames><hostname name="lab-desktop-1.lab_net" type="PTR"/></hostnames>
+<ports>
+<port protocol="tcp" portid="3389"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="ms-wbt-server" method="table" conf="3"/></port>
+<port protocol="tcp" portid="5900"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="vnc" method="table" conf="3"/></port>
 </ports>
 </host>
 
@@ -101,6 +112,6 @@
 <ports/>
 </host>
 
-<runstats><finished time="1793952586" timestr="Fri Nov  6 08:09:46 2026" summary="Nmap done at Fri Nov  6 08:09:46 2026; 255 IP addresses (9 hosts up) scanned in 77.37 seconds" elapsed="77.37" exit="success"/><hosts up="9" down="246" total="255"/>
+<runstats><finished time="1793952586" timestr="Fri Nov  6 08:09:46 2026" summary="Nmap done at Fri Nov  6 08:09:46 2026; 255 IP addresses (9 hosts up) scanned in 77.37 seconds" elapsed="77.37" exit="success"/><hosts up="10" down="245" total="255"/>
 </runstats>
 </nmaprun>
