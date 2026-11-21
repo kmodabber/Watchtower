@@ -1,5 +1,5 @@
 # Lab v0: Device Emulation on an isolated network
-# MACs must match inventory.yml; IPs are fixed so the lab is predictable; Inventory identifies devices by MAC address, not IP address
+# MACs must match inventory.yaml; IPs are fixed so the lab is predictable; Inventory identifies devices by MAC address, not IP address
 
 name: lab
 
@@ -34,7 +34,7 @@ services:
     networks:
       lab_net:
         ipv4_address: 172.28.0.3
-        mac_address: "c0:56:e3:12:34:56"  # vendor OUI (TP-Link)
+        mac_address: "c0:56:e3:12:34:56"  # vendor OUI (Hikvision)
 
   laptop:
     <<: *device
@@ -45,6 +45,46 @@ services:
       lab_net:
         ipv4_address: 172.28.0.4
         mac_address: "3a:7f:21:9c:44:b1"  # randomised (locally administered)
+
+  printer:
+    <<: *device
+    hostname: printer
+    volumes:
+      - ./shared/printer:/etc/lab:ro
+    networks:
+      lab_net:
+        ipv4_address: 172.28.0.6
+        mac_address: "00:80:77:55:00:06"  # vendor OUI (Brother)
+
+  smart-tv:
+    <<: *device
+    hostname: smart-tv
+    volumes:
+      - ./shared/tv:/etc/lab:ro
+    networks:
+      lab_net:
+        ipv4_address: 172.28.0.8
+        mac_address: "f4:f5:d8:88:00:08"  # vendor OUI (Google)
+
+  phone:
+    <<: *device
+    hostname: phone
+    volumes:
+      - ./shared/phone:/etc/lab:ro
+    networks:
+      lab_net:
+        ipv4_address: 172.28.0.9
+        mac_address: "a6:5e:90:3d:71:c8"  # randomised (locally administered)
+
+  desktop:
+    <<: *device
+    hostname: desktop
+    volumes:
+      - ./shared/desktop:/etc/lab:ro
+    networks:
+      lab_net:
+        ipv4_address: 172.28.0.10
+        mac_address: "00:14:22:99:00:0a"  # vendor OUI (Dell)
 
   # The NAS has its own image because it needs to run a real FTP server and a real SMB server, not just a banner. The NAS image is based on Alpine Linux, but it installs vsftpd and samba.
   #It does not use the cap_drop settings  
@@ -57,6 +97,17 @@ services:
       lab_net:
         ipv4_address: 172.28.0.5
         mac_address: "00:11:32:33:00:04"  # vendor OUI (Synology)
+
+  # The smart plug has its own image because it needs to run a real MQTT broker, not just a banner. The smart plug image is based on Alpine Linux, but it installs mosquitto.
+  smart-plug:
+    build: ./plug
+    image: lab-plug:v0
+    hostname: smart-plug
+    restart: unless-stopped
+    networks:
+      lab_net:
+        ipv4_address: 172.28.0.7
+        mac_address: "24:0a:c4:77:00:07"  # vendor OUI (Espressif)
   scanner:
     build:
       context: .
@@ -75,7 +126,7 @@ services:
 
 networks:
   lab_net:
-    name: lab_net   # fixed name so the scanner project can join it
+    name: lab_net
     driver: bridge
     internal: true
     ipam:
