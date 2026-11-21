@@ -55,8 +55,17 @@
 - type: router
   points: 4
   ports_all: [53, 80]
-  ip_ends_with: ".1"
-  reason: DNS and web admin on gateway address
+  reason: DNS and web administration services
+
+- type: desktop
+  points: 3
+  port: 3389
+  reason: RDP remote desktop port
+
+- type: desktop
+  points: 2
+  port: 5900
+  reason: VNC remote access port
 
 - type: phone
   points: 3
