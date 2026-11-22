@@ -163,7 +163,7 @@ def test_nmap_engine_parses_stdout_xml_without_a_live_scan(
 ) -> None:
     seen: list[list[str]] = []
     network = "172.28.0.0/24"
-    exclude_ip = "172.28.0.6"
+    exclude_ip = "172.28.0.20"
     xml = (FIXTURES / f"lab-{profile}.xml").read_text(encoding="utf-8")
 
     def fake_run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
@@ -186,7 +186,7 @@ def test_nmap_engine_parses_stdout_xml_without_a_live_scan(
 def test_custom_nmap_binary_keeps_build_command_flags(monkeypatch: pytest.MonkeyPatch) -> None:
     seen: list[list[str]] = []
     network = "172.28.0.0/24"
-    exclude_ip = "172.28.0.6"
+    exclude_ip = "172.28.0.20"
     xml = (FIXTURES / "lab-quick.xml").read_text(encoding="utf-8")
 
     def fake_run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
@@ -237,7 +237,7 @@ def test_nmap_engine_timeout_fails_the_scan(
 
     monkeypatch.setattr(scan_engine.subprocess, "run", fake_run)
     with pytest.raises(ScanFailed, match="timed out") as caught:
-        NmapEngine(exclude_ip="172.28.0.6").run(profile, "172.28.0.0/24")
+        NmapEngine(exclude_ip="172.28.0.20").run(profile, "172.28.0.0/24")
     assert isinstance(caught.value.__cause__, subprocess.TimeoutExpired)
 
 
@@ -253,7 +253,7 @@ def test_nmap_engine_nonzero_exit_logs_stderr_and_fails(
     monkeypatch.setattr(scan_engine.subprocess, "run", fake_run)
     with caplog.at_level(logging.ERROR):
         with pytest.raises(ScanFailed, match="exit code 1"):
-            NmapEngine(exclude_ip="172.28.0.6").run("full", "172.28.0.0/24")
+            NmapEngine(exclude_ip="172.28.0.20").run("full", "172.28.0.0/24")
     assert stderr in caplog.text
 
 
@@ -306,7 +306,7 @@ def test_nmap_engine_timeout_kills_the_child(
     monkeypatch.setattr(scan_engine.subprocess, "run", run_sleeper)
     started = time.monotonic()
     with pytest.raises(ScanFailed, match="timed out") as caught:
-        NmapEngine(exclude_ip="172.28.0.6").run("full", "172.28.0.0/24")
+        NmapEngine(exclude_ip="172.28.0.20").run("full", "172.28.0.0/24")
     assert time.monotonic() - started < 10
     assert isinstance(caught.value.__cause__, subprocess.TimeoutExpired)
     pid = int(pid_file.read_text(encoding="utf-8"))
