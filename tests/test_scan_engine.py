@@ -18,7 +18,8 @@ import pytest
 
 from watchtower.scanner import scan_engine
 from watchtower.scanner.command_builder import build_command
-from watchtower.scanner.models import ScanResult
+from watchtower.scanner.mac_helpers import label_host_mac
+from watchtower.scanner.models import Host, ScanResult
 from watchtower.scanner.nmap_parser import parse_nmap_xml
 from watchtower.scanner.scan_engine import FakeEngine, NmapEngine, ScanEngine, ScanFailed
 
@@ -66,10 +67,17 @@ def test_fake_engine_returns_saved_c1(profile: str) -> None:
 
     assert isinstance(engine, ScanEngine)
     _assert_c1(result, profile)
-    assert _without_scan_id(result) == _without_scan_id(expected)
-    assert _without_scan_id(result) == _without_scan_id(
-        parse_nmap_xml(FIXTURES / f"lab-{profile}.xml", profile=profile)
-    )
+
+    # The parser should still match the original saved C1 fixture.
+    parsed = parse_nmap_xml(FIXTURES / f"lab-{profile}.xml", profile=profile)
+    assert _without_scan_id(parsed) == _without_scan_id(expected)
+
+    # The engine should enrich the parsed hosts with WT-57 MAC helpers.
+    enriched_expected = {
+        **expected,
+        "hosts": [label_host_mac(Host.from_dict(host)).to_dict() for host in expected["hosts"]],
+    }
+    assert _without_scan_id(result) == _without_scan_id(enriched_expected)
 
 
 def test_fake_engine_ignores_target_and_replays_the_fixture() -> None:
