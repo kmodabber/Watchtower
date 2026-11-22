@@ -8,7 +8,7 @@
      IPs: .2 router, .3 camera, .4 laptop, .5 nas, .7 printer, .8 smart-plug,
      .9 smart-tv, .10 phone. .1 is the Docker bridge (not in the inventory).
      .6 is the scanner and is excluded. -->
-<nmaprun scanner="nmap" args="nmap -sS -sV --version-light --top-ports 1000 -T3 --max-rate 100 --host-timeout 5m --privileged -oX - --exclude 172.28.0.6 172.28.0.0/24" start="1793952509" startstr="Fri Nov  6 08:08:29 2026" version="7.95" xmloutputversion="1.05">
+<nmaprun scanner="nmap" args="nmap -sS -sV --version-light --top-ports 1000 -T3 --max-rate 100 --host-timeout 5m --privileged -oX - --exclude 172.28.0.20 172.28.0.0/24" start="1793952509" startstr="Fri Nov  6 08:08:29 2026" version="7.95" xmloutputversion="1.05">
 <scaninfo type="syn" protocol="tcp" numservices="1000"/>
 <verbose level="0"/>
 <debugging level="0"/>
