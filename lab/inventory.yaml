@@ -1,3 +1,6 @@
+# Not listed: Docker's bridge gateway (172.28.0.1) also answers scans, with a random MAC.
+# It is not a lab device. Comparisons against this file should ignore that address.
+
 devices:
   - name: router
     mac: "50:c7:bf:11:00:02"
@@ -15,7 +18,7 @@ devices:
     mac: "00:11:32:33:00:04"
     type: nas
     ports: [21, 445]
-    expected_findings: [ RF-FTP, RF-SMB,]
+    expected_findings: [RF-FTP, RF-SMB]
 
   - name: printer
     mac: "00:80:77:55:00:06"
@@ -38,8 +41,14 @@ devices:
   - name: smart-tv
     mac: "f4:f5:d8:88:00:08"
     type: smart-tv
-    ports: [8008, 8009, 8443]
-    expected_findings: []     # clean
+    ports: [8008, 8009, 8443, 5555]
+    expected_findings: [RF-ADB]
+
+  - name: desktop
+    mac: "00:14:22:99:00:0a"
+    type: desktop
+    ports: [3389, 5900]
+    expected_findings: [RF-RDP, RF-VNC]
 
   - name: phone
     mac: "a6:5e:90:3d:71:c8"
