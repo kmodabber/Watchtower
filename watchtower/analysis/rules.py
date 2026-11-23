@@ -1,79 +1,62 @@
-from watchtower.scanner.models import Finding, Host
+"""Red-flag rules engine (WT-65, WT-FR-14, PRD T-13).
+
+Turns the rules in rules/red_flags.yaml (contract C3) into findings for one device.
+Only open-port checks: no NSE scripts (D1). When unsure, raise nothing: a missing
+finding beats a wrong one.
+"""
+
+from pathlib import Path
+from typing import Any
+
 import yaml
 
-def load_rules(path="rules/red_flags.yaml") -> list[dict]:
-    """Read the YAML file and return the list of rules.
+from watchtower.scanner.models import Finding, Host, Port
 
-    Each rule is a dict with keys: id, title, severity, match,
-    explanation, fix, references, and optionally device_types.
+DEFAULT_RULES = Path(__file__).resolve().parents[2] / "rules" / "red_flags.yaml"
 
-    Example::
 
-        [
-            {
-                "id": "RF-TELNET",
-                "title": "Telnet is open",
-                "severity": "high",
-                "match": {"port": 23},
-                ...
-            },
-            ...
-        ]
-    """
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+def load_rules(path: str | Path = DEFAULT_RULES) -> list[dict[str, Any]]:
+    """Read the YAML file and return the list of rules (dicts in the C3 shape)."""
+    with open(path, encoding="utf-8") as f:
+        return yaml.safe_load(f) or []
 
-def evaluate(host: Host, device_type: str | None, rules: list[dict]) -> list[Finding]:
+
+def _port_matches(port: Port, match: dict[str, Any]) -> bool:
+    """True if every key in a rule's ``match`` holds for this one port."""
+    if "version_below" in match:
+        return False  # version checks come in Stage 4 (WT-FR-18); raise nothing until then
+    checks = {"port": port.port, "service": port.service, "product": port.product}
+    return all(checks[key] == value for key, value in match.items())
+
+
+def evaluate(host: Host, device_type: str | None, rules: list[dict[str, Any]]) -> list[Finding]:
     """Return one Finding for each rule this host triggers.
 
-    Matching logic (Stage 1 only — product/version_below ignored):
-    - match.port:    any open port whose port number equals the value.
-    - match.service: any open port whose service name equals the value.
-    - device_types:  if present, device_type must be in the list.
-                     If device_type is None, the rule is skipped.
-    When uncertain, the rule is skipped — a missing finding beats a wrong one.
+    - ``match`` keys are checked by name (port, service, product); all must hold on
+      the same open port. A rule with ``version_below`` is skipped for now.
+    - ``device_types``: the rule applies only to those types. If ``device_type`` is
+      None (unknown or unsure), the rule is skipped.
     """
     findings: list[Finding] = []
-
+    open_ports = [p for p in host.ports if p.state == "open"]
     for rule in rules:
-        # --- device_types filter ---
-        allowed_types: list[str] | None = rule.get("device_types")
-        if allowed_types is not None:
-            if device_type is None or device_type not in allowed_types:
-                continue
-
-        # --- port/service (or other string) matching ---
-        match: dict = rule.get("match", {})
-        matched_port: int | None = None
-        match_key: str | None = next((k for k in match if k != "port"), None)
-
-        if "port" in match:
-            target_port: int = match["port"]
-            for p in host.ports:
-                if p.port == target_port:
-                    matched_port = p.port
-                    break
-
-        elif match_key:
-            target_value: str = match[match_key]
-            for p in host.ports:
-                if getattr(p, match_key, None) == target_value:
-                    matched_port = p.port
-                    break
-
-        else:
+        allowed = rule.get("device_types")
+        if allowed is not None and device_type not in allowed:
             continue
-
-        if matched_port is None:
+        match = rule.get("match") or {}
+        if not match:
             continue
-
-        findings.append(Finding(
-            rule_id=rule["id"],
-            severity=rule["severity"],
-            title=rule["title"],
-            explanation=rule["explanation"],
-            fix=rule["fix"],
-            port=matched_port,
-        ))
-
+        hit = next((p for p in open_ports if _port_matches(p, match)), None)
+        if hit is None:
+            continue
+        findings.append(
+            Finding(
+                rule_id=rule["id"],
+                severity=rule["severity"],
+                title=rule["title"],
+                explanation=" ".join(str(rule["explanation"]).split()),
+                fix=" ".join(str(rule["fix"]).split()),
+                port=hit.port,
+            )
+        )
     return findings
