@@ -22,7 +22,7 @@ ALLOWED_RANGES: tuple[IPv4Network, ...] = (
     ipaddress.ip_network("192.168.0.0/16"),
 )
 MIN_PREFIX_LENGTH = 23  # a /23 is the largest network allowed
-_INTERFACE_NAME = re.compile(r"^[A-Za-z0-9_.-]{1,15}$")
+_INTERFACE_NAME = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]{0,14}")
 _IP_TIMEOUT_SECONDS = 10
 
 
@@ -67,7 +67,7 @@ def interface_address_from_ip_json(output: str, interface: str) -> str:
 
 def scan_scope(interface: str) -> tuple[IPv4Network, IPv4Address]:
     """Compute the scan scope from a configured interface name, or raise GuardrailError."""
-    if not _INTERFACE_NAME.match(interface):
+    if not _INTERFACE_NAME.fullmatch(interface):
         raise _refuse(f"{interface!r} is not a valid interface name")
     try:
         completed = subprocess.run(

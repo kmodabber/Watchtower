@@ -3,6 +3,7 @@ from ipaddress import IPv4Address, IPv4Network
 
 import pytest
 
+from watchtower.scanner import guardrail
 from watchtower.scanner.guardrail import (
     GuardrailError,
     interface_address_from_ip_json,
@@ -66,7 +67,8 @@ def test_guardrail_error_is_a_value_error() -> None:
 
 def test_ip_json_is_parsed() -> None:
     sample = (
-        '[{"ifname":"eth0","addr_info":[{"family":"inet","local":"172.28.0.20","prefixlen":24}]}]'
+        '[{"ifname":"eth0","addr_info":'
+        '[{"family":"inet","local":"172.28.0.20","prefixlen":24}]}]'
     )
     assert interface_address_from_ip_json(sample, "eth0") == "172.28.0.20/24"
 
@@ -77,7 +79,18 @@ def test_missing_address_is_refused(sample: str) -> None:
         interface_address_from_ip_json(sample, "eth0")
 
 
-@pytest.mark.parametrize("name", ["-j", "eth0; ls", "", "a" * 16])
-def test_bad_interface_names_are_refused_before_running_ip(name: str) -> None:
-    with pytest.raises(GuardrailError):
+@pytest.mark.parametrize("name", ["-j", "--help", "eth0; ls", "", "a" * 16, "eth 0", "eth0\n"])
+def test_bad_interface_names_never_reach_subprocess(
+    name: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def fail_if_called(*args: object, **kwargs: object) -> None:
+        raise AssertionError("subprocess.run must not be called for an invalid name")
+
+    monkeypatch.setattr(guardrail.subprocess, "run", fail_if_called)
+    with pytest.raises(GuardrailError, match="not a valid interface name"):
         scan_scope(name)
+
+
+@pytest.mark.parametrize("name", ["eth0", "wlan0", "enp3s0", "br-1a2b3c", "veth.12"])
+def test_real_interface_names_pass_the_name_check(name: str) -> None:
+    assert guardrail._INTERFACE_NAME.fullmatch(name)
