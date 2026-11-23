@@ -19,6 +19,7 @@ from watchtower.analysis.rules import evaluate, load_rules
 from watchtower.scanner.identification import CONFIDENCE_VALUES, confidence_label, identify_scan
 from watchtower.scanner.models import Finding, ScanResult, TypeGuess
 from watchtower.scanner.scan_engine import ScanEngine, ScanFailed
+from watchtower.store.changes import detect_changes
 from watchtower.store.db import make_engine, make_sessionmaker, upgrade
 from watchtower.store.models import SEVERITIES, Scan
 from watchtower.store.storage import save_scan
@@ -55,6 +56,7 @@ class ScanReport:
     profile: str
     subnet: str
     devices: list[DeviceReport]
+    changes: list[str] = field(default_factory=list)  # change kinds recorded (WT-67)
 
     @property
     def finding_count(self) -> int:
@@ -131,6 +133,8 @@ def run_scan(
         with make_sessionmaker(engine_db).begin() as session:
             scan = save_scan(session, result, guesses, trigger=trigger, findings=findings)
             scan_id = scan.id
+            # Read the kinds now: the rows are expired once the transaction commits.
+            change_kinds = [c.kind for c in detect_changes(session, scan_id)]
     finally:
         engine_db.dispose()
 
@@ -139,8 +143,14 @@ def run_scan(
         for h in result.hosts
     ]
     devices.sort(key=lambda d: (d.worst, _ip_key(d.ip)))
-    report = ScanReport(scan_id, result.profile, result.subnet, devices)
-    log.info("Scan %s stored: %d devices, %d findings", scan_id, len(devices), report.finding_count)
+    report = ScanReport(scan_id, result.profile, result.subnet, devices, change_kinds)
+    log.info(
+        "Scan %s stored: %d devices, %d findings, %d changes",
+        scan_id,
+        len(devices),
+        report.finding_count,
+        len(change_kinds),
+    )
     return report
 
 
