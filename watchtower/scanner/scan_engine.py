@@ -22,6 +22,7 @@ from __future__ import annotations
 import logging
 import subprocess
 import tempfile
+from dataclasses import replace
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
@@ -31,6 +32,7 @@ from watchtower.scanner.command_builder import (
     require_argv_token,
     validate_command,
 )
+from watchtower.scanner.mac_helpers import label_host_mac
 from watchtower.scanner.models import ScanResult
 from watchtower.scanner.nmap_parser import parse_nmap_xml
 
@@ -59,6 +61,14 @@ def _require_profile(profile: str) -> None:
 
 def _require_target(target: str) -> None:
     require_argv_token("target", target)
+
+
+def _enrich_mac_info(result: ScanResult) -> ScanResult:
+    """Apply MAC normalization and vendor labeling to discovered hosts."""
+    return replace(
+        result,
+        hosts=[label_host_mac(host) for host in result.hosts],
+    )
 
 
 @runtime_checkable
@@ -92,7 +102,8 @@ class FakeEngine:
                 f"No saved {profile} scan at {xml_path}. "
                 "Expected a WT-55 fixture named lab-<profile>.xml."
             )
-        return ScanResult.from_dict(parse_nmap_xml(xml_path, profile=profile))
+        result = ScanResult.from_dict(parse_nmap_xml(xml_path, profile=profile))
+        return _enrich_mac_info(result)
 
 
 class NmapEngine:
@@ -151,4 +162,5 @@ class NmapEngine:
         with tempfile.TemporaryDirectory(prefix="watchtower-nmap-") as tmp:
             xml_path = Path(tmp) / "scan.xml"
             xml_path.write_text(completed.stdout or "", encoding="utf-8")
-            return ScanResult.from_dict(parse_nmap_xml(xml_path, profile=profile))
+            result = ScanResult.from_dict(parse_nmap_xml(xml_path, profile=profile))
+            return _enrich_mac_info(result)
