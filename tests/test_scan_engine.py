@@ -7,7 +7,10 @@ the real binary.
 
 import json
 import logging
+import os
 import subprocess
+import sys
+import time
 import uuid
 from pathlib import Path
 
@@ -79,6 +82,11 @@ def test_fake_engine_ignores_target_and_replays_the_fixture() -> None:
         "172.28.0.3",
         "172.28.0.4",
         "172.28.0.5",
+        "172.28.0.6",
+        "172.28.0.7",
+        "172.28.0.8",
+        "172.28.0.9",
+        "172.28.0.10",
     ]
     assert all(host.ports == [] for host in result.hosts)
 
@@ -108,7 +116,7 @@ def test_custom_fixture_folder(tmp_path: Path) -> None:
     assert isinstance(result, ScanResult)
     assert result.profile == "quick"
     assert result.nmap_version == "7.95"
-    assert len(result.hosts) == 5
+    assert len(result.hosts) == 10
 
 
 def test_missing_fixture_folder(tmp_path: Path) -> None:
@@ -155,7 +163,7 @@ def test_nmap_engine_parses_stdout_xml_without_a_live_scan(
 ) -> None:
     seen: list[list[str]] = []
     network = "172.28.0.0/24"
-    exclude_ip = "172.28.0.6"
+    exclude_ip = "172.28.0.20"
     xml = (FIXTURES / f"lab-{profile}.xml").read_text(encoding="utf-8")
 
     def fake_run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
@@ -178,7 +186,7 @@ def test_nmap_engine_parses_stdout_xml_without_a_live_scan(
 def test_custom_nmap_binary_keeps_build_command_flags(monkeypatch: pytest.MonkeyPatch) -> None:
     seen: list[list[str]] = []
     network = "172.28.0.0/24"
-    exclude_ip = "172.28.0.6"
+    exclude_ip = "172.28.0.20"
     xml = (FIXTURES / "lab-quick.xml").read_text(encoding="utf-8")
 
     def fake_run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
@@ -229,7 +237,7 @@ def test_nmap_engine_timeout_fails_the_scan(
 
     monkeypatch.setattr(scan_engine.subprocess, "run", fake_run)
     with pytest.raises(ScanFailed, match="timed out") as caught:
-        NmapEngine(exclude_ip="172.28.0.6").run(profile, "172.28.0.0/24")
+        NmapEngine(exclude_ip="172.28.0.20").run(profile, "172.28.0.0/24")
     assert isinstance(caught.value.__cause__, subprocess.TimeoutExpired)
 
 
@@ -245,5 +253,61 @@ def test_nmap_engine_nonzero_exit_logs_stderr_and_fails(
     monkeypatch.setattr(scan_engine.subprocess, "run", fake_run)
     with caplog.at_level(logging.ERROR):
         with pytest.raises(ScanFailed, match="exit code 1"):
-            NmapEngine(exclude_ip="172.28.0.6").run("full", "172.28.0.0/24")
+            NmapEngine(exclude_ip="172.28.0.20").run("full", "172.28.0.0/24")
     assert stderr in caplog.text
+
+
+def _pid_is_running(pid: int) -> bool:
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        # Windows raises OSError when the pid is gone.
+        return False
+    return True
+
+
+def test_nmap_engine_timeout_kills_the_child(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """subprocess.run kills the child before raising; ScanFailed follows."""
+    pid_file = tmp_path / "child.pid"
+    sleeper = tmp_path / "sleeper.py"
+    sleeper.write_text(
+        "import os\n"
+        "import time\n"
+        "from pathlib import Path\n"
+        "Path(os.environ['WATCHTOWER_TEST_PID_FILE']).write_text("
+        "str(os.getpid()), encoding='utf-8')\n"
+        "time.sleep(30)\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("WATCHTOWER_TEST_PID_FILE", str(pid_file))
+    monkeypatch.setitem(scan_engine._PROFILE_TIMEOUT_SECONDS, "full", 1)
+    real_run = subprocess.run
+
+    def run_sleeper(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        assert kwargs["timeout"] == 1
+        assert kwargs["shell"] is False
+        return real_run(
+            [sys.executable, str(sleeper)],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=kwargs["timeout"],
+            shell=False,
+        )
+
+    monkeypatch.setattr(scan_engine.subprocess, "run", run_sleeper)
+    started = time.monotonic()
+    with pytest.raises(ScanFailed, match="timed out") as caught:
+        NmapEngine(exclude_ip="172.28.0.20").run("full", "172.28.0.0/24")
+    assert time.monotonic() - started < 10
+    assert isinstance(caught.value.__cause__, subprocess.TimeoutExpired)
+    pid = int(pid_file.read_text(encoding="utf-8"))
+    assert not _pid_is_running(pid)

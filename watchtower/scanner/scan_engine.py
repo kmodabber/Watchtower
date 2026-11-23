@@ -9,12 +9,12 @@ Nmap argv is built only by :func:`watchtower.scanner.command_builder.build_comma
 Quick scans stop after 120 seconds and full scans after 30 minutes. A timeout
 or a non-zero Nmap exit raises :class:`ScanFailed` instead of a C1 result.
 
-Until WT-62 lands, both engines use Joseph's parser v0 (WT-96,
-``parse_nmap_xml``) and wrap the parser dict in :class:`ScanResult`. A
-:class:`~watchtower.scanner.models.ModelError` from parser output that does
-not fit the C1 shape is left to propagate. The command uses ``-oX -`` so XML
-arrives on stdout; the engine writes that stdout to a temp file because the
-parser reads a path.
+Both engines use the WT-62 parser (``parse_nmap_xml``) and wrap the parser
+dict in :class:`ScanResult`. A :class:`~watchtower.scanner.nmap_parser.ScanParseError`
+from broken XML, or a :class:`~watchtower.scanner.models.ModelError` from
+parser output that does not fit the C1 shape, is left to propagate. The
+command uses ``-oX -`` so XML arrives on stdout; the engine writes that
+stdout to a temp file because the parser reads a path.
 """
 
 from __future__ import annotations
@@ -25,7 +25,12 @@ import tempfile
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
-from watchtower.scanner.command_builder import PROFILES, build_command, require_argv_token
+from watchtower.scanner.command_builder import (
+    PROFILES,
+    build_command,
+    require_argv_token,
+    validate_command,
+)
 from watchtower.scanner.models import ScanResult
 from watchtower.scanner.nmap_parser import parse_nmap_xml
 
@@ -106,14 +111,14 @@ class NmapEngine:
         self.exclude_ip = exclude_ip
 
     def run(self, profile: str, target: str) -> ScanResult:
-        _require_profile(profile)
-        _require_target(target)
-        if self.exclude_ip is None:
-            raise ValueError("exclude_ip is required")
+        # A missing exclude_ip becomes "", which build_command refuses.
+        exclude_ip = self.exclude_ip or ""
         # Flags come only from build_command. argv[0] may be a custom binary.
-        command = build_command(profile, target, self.exclude_ip)
+        command = build_command(profile, target, exclude_ip)
         if self.nmap != command[0]:
             command = [self.nmap, *command[1:]]
+        # WT-76: refuse anything that is not the exact approved command.
+        validate_command(command, profile, target, exclude_ip)
         timeout_seconds = _PROFILE_TIMEOUT_SECONDS[profile]
         try:
             completed = subprocess.run(

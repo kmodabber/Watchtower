@@ -8,7 +8,7 @@ import pytest
 from watchtower.scanner.command_builder import build_command
 
 NETWORK = "172.28.0.0/24"
-EXCLUDE_IP = "172.28.0.6"
+EXCLUDE_IP = "172.28.0.20"
 
 QUICK_COMMAND = [
     "nmap",
@@ -83,7 +83,7 @@ def test_invalid_network_raises_and_builds_no_command(network: object) -> None:
 
 @pytest.mark.parametrize(
     "exclude_ip",
-    ["", "   ", "-sS", "--exclude", "172.28.0.6 172.28.0.7", "172.28.0.6\tnext", None],
+    ["", "   ", "-sS", "--exclude", "172.28.0.20 172.28.0.7", "172.28.0.20\tnext", None],
 )
 def test_invalid_exclude_ip_raises_and_builds_no_command(exclude_ip: object) -> None:
     with pytest.raises(ValueError, match="exclude_ip"):

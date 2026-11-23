@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<!-- WT-FR-10 / TC-06: compact -sS -sV lab fixture covering every inventory.yaml device.
+     Ports and -sV fields for router, camera, laptop, and nas come from the recorded
+     WT-55 lab-full.xml scan. printer, smart-plug, smart-tv, and phone are in the
+     inventory but not yet in lab/docker-compose.yml; their hosts are synthesized
+     in the same C1 shape so the unit test can stay in sync with the inventory.
+     IPs: .2 router, .3 camera, .4 laptop, .5 nas, .7 printer, .8 smart-plug,
+     .9 smart-tv, .10 phone. .1 is the Docker bridge (not in the inventory).
+     .6 is the scanner and is excluded. -->
+<nmaprun scanner="nmap" args="nmap -sS -sV --version-light --top-ports 1000 -T3 --max-rate 100 --host-timeout 5m --privileged -oX - --exclude 172.28.0.20 172.28.0.0/24" start="1793952509" startstr="Fri Nov  6 08:08:29 2026" version="7.95" xmloutputversion="1.05">
+<scaninfo type="syn" protocol="tcp" numservices="1000"/>
+<verbose level="0"/>
+<debugging level="0"/>
+
+<host starttime="1793952525" endtime="1793952586"><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="172.28.0.1" addrtype="ipv4"/>
+<address addr="A2:FC:AE:A8:A0:A9" addrtype="mac"/>
+<hostnames/>
+<ports>
+<port protocol="tcp" portid="111"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="rpcbind" method="probed" conf="10"/></port>
+</ports>
+</host>
+
+<host starttime="1793952525" endtime="1793952586"><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="172.28.0.2" addrtype="ipv4"/>
+<address addr="50:C7:BF:11:00:02" addrtype="mac" vendor="TP-Link Technologies"/>
+<hostnames><hostname name="lab-router-1.lab_net" type="PTR"/></hostnames>
+<ports>
+<port protocol="tcp" portid="53"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="domain" product="dnsmasq" version="2.90" method="probed" conf="10"/></port>
+<port protocol="tcp" portid="80"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="http" method="table" conf="3"/></port>
+<port protocol="tcp" portid="5000"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="upnp" method="table" conf="3"/></port>
+</ports>
+</host>
+
+<host starttime="1793952525" endtime="1793952586"><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="172.28.0.3" addrtype="ipv4"/>
+<address addr="C0:56:E3:12:34:56" addrtype="mac" vendor="Hangzhou Hikvision Digital Technology"/>
+<hostnames><hostname name="lab-camera-1.lab_net" type="PTR"/></hostnames>
+<ports>
+<port protocol="tcp" portid="23"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="telnet" product="BusyBox telnetd" method="probed" conf="10"/></port>
+<port protocol="tcp" portid="80"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="http" method="table" conf="3"/></port>
+<port protocol="tcp" portid="554"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="tcpwrapped" method="probed" conf="8"/></port>
+</ports>
+</host>
+
+<host starttime="1793952525" endtime="1793952586"><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="172.28.0.4" addrtype="ipv4"/>
+<address addr="3A:7F:21:9C:44:B1" addrtype="mac"/>
+<hostnames><hostname name="lab-laptop-1.lab_net" type="PTR"/></hostnames>
+<ports>
+<port protocol="tcp" portid="22"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="ssh" extrainfo="protocol 2.0" method="probed" conf="10"/></port>
+</ports>
+</host>
+
+<host starttime="1793952525" endtime="1793952586"><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="172.28.0.5" addrtype="ipv4"/>
+<address addr="00:11:32:33:00:04" addrtype="mac" vendor="Synology Incorporated"/>
+<hostnames><hostname name="lab-nas-1.lab_net" type="PTR"/></hostnames>
+<ports>
+<port protocol="tcp" portid="21"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="ftp" product="vsftpd" version="2.0.8 or later" method="probed" conf="10"/></port>
+<port protocol="tcp" portid="445"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="netbios-ssn" product="Samba smbd" version="4" method="probed" conf="10"/></port>
+</ports>
+</host>
+
+<host starttime="1793952525" endtime="1793952586"><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="172.28.0.7" addrtype="ipv4"/>
+<address addr="00:80:77:55:00:06" addrtype="mac" vendor="Brother Industries"/>
+<hostnames><hostname name="lab-printer-1.lab_net" type="PTR"/></hostnames>
+<ports>
+<port protocol="tcp" portid="80"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="http" method="table" conf="3"/></port>
+<port protocol="tcp" portid="631"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="ipp" product="CUPS" version="2.4" method="probed" conf="10"/></port>
+<port protocol="tcp" portid="9100"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="jetdirect" method="table" conf="3"/></port>
+</ports>
+</host>
+
+<host starttime="1793952525" endtime="1793952586"><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="172.28.0.8" addrtype="ipv4"/>
+<address addr="24:0A:C4:77:00:07" addrtype="mac" vendor="Espressif Inc."/>
+<hostnames><hostname name="lab-smart-plug-1.lab_net" type="PTR"/></hostnames>
+<ports>
+<port protocol="tcp" portid="1883"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="mqtt" product="Mosquitto" method="probed" conf="10"/></port>
+</ports>
+</host>
+
+<host starttime="1793952525" endtime="1793952586"><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="172.28.0.9" addrtype="ipv4"/>
+<address addr="F4:F5:D8:88:00:08" addrtype="mac" vendor="Google"/>
+<hostnames><hostname name="lab-smart-tv-1.lab_net" type="PTR"/></hostnames>
+<ports>
+<port protocol="tcp" portid="8008"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="http" product="Google Chromecast httpd" method="probed" conf="10"/></port>
+<port protocol="tcp" portid="8009"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="ajp13" method="table" conf="3"/></port>
+<port protocol="tcp" portid="8443"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="https-alt" method="table" conf="3"/></port>
+<port protocol="tcp" portid="5555"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="unknown" method="table" conf="3"/></port>
+</ports>
+</host>
+
+<host starttime="1793952525" endtime="1793952586"><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="172.28.0.11" addrtype="ipv4"/>
+<address addr="00:14:22:99:00:0A" addrtype="mac"/>
+<hostnames><hostname name="lab-desktop-1.lab_net" type="PTR"/></hostnames>
+<ports>
+<port protocol="tcp" portid="3389"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="ms-wbt-server" method="table" conf="3"/></port>
+<port protocol="tcp" portid="5900"><state state="open" reason="syn-ack" reason_ttl="64"/><service name="vnc" method="table" conf="3"/></port>
+</ports>
+</host>
+
+<host starttime="1793952525" endtime="1793952586"><status state="up" reason="arp-response" reason_ttl="0"/>
+<address addr="172.28.0.10" addrtype="ipv4"/>
+<address addr="A6:5E:90:3D:71:C8" addrtype="mac"/>
+<hostnames><hostname name="lab-phone-1.lab_net" type="PTR"/></hostnames>
+<ports/>
+</host>
+
+<runstats><finished time="1793952586" timestr="Fri Nov  6 08:09:46 2026" summary="Nmap done at Fri Nov  6 08:09:46 2026; 255 IP addresses (9 hosts up) scanned in 77.37 seconds" elapsed="77.37" exit="success"/><hosts up="10" down="245" total="255"/>
+</runstats>
+</nmaprun>
