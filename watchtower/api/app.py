@@ -27,9 +27,9 @@ from watchtower.store.models import (
     Scan,
     ScanRequest,
     Score,
-    Setting,
     utcnow,
 )
+from watchtower.store.storage import confirm_ownership, ownership_confirmed
 
 Severity = Literal["high", "medium", "low", "info"]
 Profile = Literal["quick", "full"]
@@ -166,11 +166,6 @@ def get_session(request: Request) -> Iterator[Session]:
 DB = Annotated[Session, Depends(get_session)]
 
 
-def _setting(session: Session, key: str) -> str | None:
-    row = session.get(Setting, key)
-    return row.value if row else None
-
-
 def _display_name(d: Device) -> str:
     return d.user_name or d.friendly_name or d.hostname or d.vendor or d.ip or d.mac
 
@@ -240,7 +235,7 @@ def create_app(db_path: str | Path = DEFAULT_DB_PATH) -> FastAPI:
     def health(session: DB) -> HealthOut:
         try:
             last = session.scalar(select(func.max(Scan.finished_at)).where(Scan.status == "done"))
-            confirmed = _setting(session, "ownership_confirmed") == "1"
+            confirmed = ownership_confirmed(session)
         except SQLAlchemyError:
             return HealthOut(database_ok=False, last_scan_at=None, ownership_confirmed=False)
         return HealthOut(database_ok=True, last_scan_at=last, ownership_confirmed=confirmed)
@@ -328,9 +323,7 @@ def create_app(db_path: str | Path = DEFAULT_DB_PATH) -> FastAPI:
     @app.post("/api/consent", response_model=ConsentOut)
     def consent(body: ConsentIn, session: DB) -> ConsentOut:
         """Record that the user owns this network (WT-FR-24). No scan runs before this."""
-        now = utcnow()
-        session.merge(Setting(key="ownership_confirmed", value="1"))
-        session.merge(Setting(key="ownership_confirmed_at", value=now))
+        now = confirm_ownership(session)
         session.commit()
         return ConsentOut(ownership_confirmed=True, confirmed_at=now)
 

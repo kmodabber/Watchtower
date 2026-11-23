@@ -93,13 +93,16 @@ def test_live_watchtower_scan_raises_every_planted_risk(
     live_full_scan: ScanResult, tmp_path: Path
 ) -> None:
     """Milestone M2: the scan > identify > rules > store pipeline on the real lab."""
+    from watchtower.cli import main
     from watchtower.pipeline import run_scan
 
     class _Replay:  # reuse the scan above instead of scanning the lab a second time
         def run(self, profile: str, target: str) -> ScanResult:
             return live_full_scan
 
-    report = run_scan(_Replay(), "full", LAB_NETWORK, tmp_path / "lab.db")
+    db = tmp_path / "lab.db"
+    assert main(["consent", "--i-own-this-network", "--db", str(db)]) == 0  # WT-75
+    report = run_scan(_Replay(), "full", LAB_NETWORK, db)
     found = {(d.mac or "").lower(): {f.rule_id for f in d.findings} for d in report.devices}
     problems = []
     for device in _load_devices():

@@ -18,10 +18,10 @@ from typing import Any
 from watchtower.analysis.rules import evaluate, load_rules
 from watchtower.scanner.identification import CONFIDENCE_VALUES, confidence_label, identify_scan
 from watchtower.scanner.models import Finding, ScanResult, TypeGuess
-from watchtower.scanner.scan_engine import ScanEngine, ScanFailed
+from watchtower.scanner.scan_engine import FakeEngine, ScanEngine, ScanFailed
 from watchtower.store.db import make_engine, make_sessionmaker, upgrade
 from watchtower.store.models import SEVERITIES, Scan
-from watchtower.store.storage import save_scan
+from watchtower.store.storage import ownership_confirmed, save_scan
 
 log = logging.getLogger(__name__)
 
@@ -32,6 +32,10 @@ MIN_TYPE_CONFIDENCE = CONFIDENCE_VALUES["medium"]
 
 class ScanError(Exception):
     """The scan did not finish; it is recorded as a failed scan."""
+
+
+class NoConsent(ScanError):
+    """Nobody has confirmed they own this network yet (WT-FR-24). Nothing is scanned or stored."""
 
 
 @dataclass
@@ -102,6 +106,15 @@ def _record_failure(
         engine.dispose()
 
 
+def _consented(db_path: str | Path) -> bool:
+    engine = make_engine(db_path)
+    try:
+        with make_sessionmaker(engine)() as session:
+            return ownership_confirmed(session)
+    finally:
+        engine.dispose()
+
+
 def run_scan(
     engine: ScanEngine,
     profile: str,
@@ -114,9 +127,17 @@ def run_scan(
     """Scan ``target`` once, store the result and return a report.
 
     A scan that fails (timeout, Nmap error, refused command, broken XML) is stored with
-    status ``failed`` and raises ScanError.
+    status ``failed`` and raises ScanError. Without ownership consent nothing runs and
+    NoConsent is raised; a FakeEngine replay skips that check because it never touches the
+    network.
     """
     upgrade(db_path)
+    if not isinstance(engine, FakeEngine) and not _consented(db_path):
+        log.warning("waiting for ownership confirmation")
+        raise NoConsent(
+            "waiting for ownership confirmation: run `watchtower consent --i-own-this-network` "
+            "or tick the statement on the dashboard"
+        )
     try:
         result = engine.run(profile, target)
     except (ScanFailed, ValueError, OSError) as exc:

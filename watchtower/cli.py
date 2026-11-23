@@ -1,6 +1,6 @@
 """The watchtower command line entry point.
 
-Subcommands so far: scan, db upgrade, db seed, web. Later tickets add consent and scanner.
+Subcommands so far: scan, consent, db upgrade, db seed, web. A later ticket adds scanner.
 """
 
 import argparse
@@ -31,6 +31,17 @@ def build_parser() -> argparse.ArgumentParser:
         "running Nmap, e.g. tests/fixtures",
     )
 
+    consent = sub.add_parser(
+        "consent", help="confirm you own this network; no scan runs until you do"
+    )
+    consent.add_argument(
+        "--i-own-this-network",
+        action="store_true",
+        required=True,
+        help="I own this network, or have permission to scan it",
+    )
+    consent.add_argument("--db", default=str(DEFAULT_DB_PATH), help="database file (%(default)s)")
+
     db = sub.add_parser("db", help="create, migrate or seed the database")
     db_sub = db.add_subparsers(dest="db_command", required=True, metavar="<action>")
     for name, text in (
@@ -55,7 +66,19 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.command == "scan":
         return _scan(args)
-    if args.command == "db":
+    if args.command == "consent":
+        from watchtower.store.db import make_engine, make_sessionmaker, upgrade
+        from watchtower.store.storage import confirm_ownership
+
+        upgrade(args.db)
+        engine = make_engine(args.db)
+        try:
+            with make_sessionmaker(engine).begin() as session:
+                at = confirm_ownership(session)
+        finally:
+            engine.dispose()
+        log.info("Ownership confirmed at %s; scans may now run", at)
+    elif args.command == "db":
         if args.db_command == "upgrade":
             from watchtower.store.db import upgrade
 
@@ -85,7 +108,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 def _scan(args: argparse.Namespace) -> int:
     """watchtower scan (WT-102): guardrail, scan, identify, rules, store, report."""
-    from watchtower.pipeline import ScanError, format_report, run_scan
+    from watchtower.pipeline import NoConsent, ScanError, format_report, run_scan
     from watchtower.scanner.scan_engine import FakeEngine, NmapEngine
 
     if args.fake:
@@ -110,6 +133,9 @@ def _scan(args: argparse.Namespace) -> int:
 
     try:
         report = run_scan(engine, args.profile, target, db_path)
+    except NoConsent as e:
+        log.error("Not scanning: %s", e)
+        return 2
     except ScanError as e:
         log.error("%s", e)
         return 1
