@@ -6,6 +6,7 @@ These tests never start Nmap and never touch the network.
 import pytest
 
 from watchtower.scanner.command_builder import build_command
+from watchtower.scanner.ports import FULL_SCAN_PORTS
 
 NETWORK = "172.28.0.0/24"
 EXCLUDE_IP = "172.28.0.20"
@@ -26,8 +27,8 @@ FULL_COMMAND = [
     "-sS",
     "-sV",
     "--version-light",
-    "--top-ports",
-    "1000",
+    "-p",
+    FULL_SCAN_PORTS,
     "-T3",
     "--max-rate",
     "100",

@@ -18,6 +18,7 @@ from watchtower.scanner.command_builder import (
     build_command,
     validate_command,
 )
+from watchtower.scanner.ports import FULL_SCAN_PORTS
 from watchtower.scanner.scan_engine import NmapEngine
 
 NETWORK = "172.28.0.0/24"
@@ -39,8 +40,8 @@ FULL_COMMAND = [
     "-sS",
     "-sV",
     "--version-light",
-    "--top-ports",
-    "1000",
+    "-p",
+    FULL_SCAN_PORTS,
     "-T3",
     "--max-rate",
     "100",
@@ -61,7 +62,7 @@ def _swap(old: str, new: str) -> list[str]:
 
 TAMPERED_COMMANDS = {
     "max-rate": _swap("100", "100000"),
-    "top-ports": _swap("1000", "65535"),
+    "ports": _swap(FULL_SCAN_PORTS, "1-65535"),
     "output-file": _swap("-", "/tmp/out.xml"),
     "removed-exclude": [part for part in FULL_COMMAND if part not in ("--exclude", EXCLUDE_IP)],
     "bare-nmap-net": ["nmap", NETWORK],
