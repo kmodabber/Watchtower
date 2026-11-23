@@ -1,9 +1,11 @@
 """Tests for WT-56 quick discovery MAC enrichment."""
 
+import ipaddress
 import subprocess
 from pathlib import Path
 
 import pytest
+import yaml
 
 from watchtower.scanner import scan_engine
 from watchtower.scanner.mac_helpers import PRIVATE_ADDRESS_VENDOR
@@ -66,3 +68,40 @@ def test_mac_enrichment_preserves_device_fields(profile: str) -> None:
             assert host.vendor == PRIVATE_ADDRESS_VENDOR
         else:
             assert host.vendor == original["vendor"]
+
+
+def test_quick_discovery_matches_lab_inventory() -> None:
+    """Check that quick discovery includes every expected lab device."""
+    inventory_path = Path(__file__).resolve().parents[1] / "lab" / "inventory.yaml"
+    inventory = yaml.safe_load(inventory_path.read_text(encoding="utf-8"))
+    devices = inventory["devices"]
+
+    result = FakeEngine(FIXTURES).run("quick", NETWORK)
+
+    # Docker's bridge gateway is not an inventory device.
+    hosts = [host for host in result.hosts if host.ip != "172.28.0.1"]
+
+    expected_macs = {device["mac"].lower() for device in devices}
+    actual_macs = {host.mac for host in hosts}
+
+    assert len(hosts) == len(devices)
+    assert actual_macs == expected_macs
+
+    network = ipaddress.ip_network(NETWORK)
+
+    for host in hosts:
+        assert ipaddress.ip_address(host.ip) in network
+        assert host.mac is not None
+        assert host.ports == []
+
+    # These two devices use locally administered MAC addresses.
+    hosts_by_mac = {host.mac: host for host in hosts}
+
+    for device in devices:
+        host = hosts_by_mac[device["mac"].lower()]
+        expected_private = device["name"] in {"laptop", "phone"}
+
+        assert host.mac_randomised is expected_private
+
+        if expected_private:
+            assert host.vendor == PRIVATE_ADDRESS_VENDOR
