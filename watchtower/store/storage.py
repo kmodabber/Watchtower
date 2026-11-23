@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 
 from watchtower.scanner.mac_helpers import label_host_mac
 from watchtower.scanner.models import Finding, Host, ScanResult, TypeGuess
-from watchtower.store.models import Device, Port, Scan, Sighting
+from watchtower.store.models import Device, Port, Scan, Setting, Sighting, utcnow
 from watchtower.store.models import Finding as FindingRow
 
 log = logging.getLogger(__name__)
@@ -163,3 +163,17 @@ def save_scan(
                 _update_findings(session, device, list(findings.get(host.ip, [])), at)
     session.flush()
     return scan
+
+
+def ownership_confirmed(session: Session) -> bool:
+    """True once the user has said they own this network (WT-FR-24)."""
+    row = session.get(Setting, "ownership_confirmed")
+    return row is not None and row.value == "1"
+
+
+def confirm_ownership(session: Session) -> str:
+    """Record ownership consent and its date (WT-FR-24). Returns the date. Caller commits."""
+    now = utcnow()
+    session.merge(Setting(key="ownership_confirmed", value="1"))
+    session.merge(Setting(key="ownership_confirmed_at", value=now))
+    return now

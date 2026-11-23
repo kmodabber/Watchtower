@@ -7,7 +7,13 @@ import yaml
 from sqlalchemy import func, select
 
 from watchtower.cli import main
-from watchtower.pipeline import ScanError, format_report, rules_device_type, run_scan
+from watchtower.pipeline import (
+    NoConsent,
+    ScanError,
+    format_report,
+    rules_device_type,
+    run_scan,
+)
 from watchtower.scanner.models import TypeGuess
 from watchtower.scanner.scan_engine import FakeEngine, ScanFailed
 from watchtower.store import models as m
@@ -94,8 +100,13 @@ class _BrokenEngine:
         raise ScanFailed("full scan timed out after 1800 seconds")
 
 
+def _consent(db: Path) -> None:
+    assert main(["consent", "--i-own-this-network", "--db", str(db)]) == 0
+
+
 def test_failed_scan_is_recorded_and_reported(tmp_path: Path) -> None:
     db = tmp_path / "w.db"
+    _consent(db)
     with pytest.raises(ScanError, match="timed out"):
         run_scan(_BrokenEngine(), "full", LAB, db)
     [scan] = _rows(db, m.Scan)
@@ -150,3 +161,38 @@ def test_cli_scan_refuses_a_bad_interface(tmp_path: Path, monkeypatch) -> None:
         'full_interval_min = 15\ndashboard_url = "http://localhost:8000"\n'
     )
     assert main(["scan", "--config", str(cfg), "--db", str(tmp_path / "w.db")]) == 2
+
+
+# ---- WT-75 (WT-FR-24, TC-09): no real scan before the user confirms they own the network ----
+
+
+def test_fresh_database_refuses_to_scan(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    db = tmp_path / "w.db"
+    with pytest.raises(NoConsent):
+        run_scan(_BrokenEngine(), "full", LAB, db)  # would raise ScanFailed if it ran
+    assert "waiting for ownership confirmation" in caplog.text
+    assert _count(db, m.Scan) == 0  # did nothing: not even a failed scan row
+
+
+def test_consent_command_stores_answer_and_date(tmp_path: Path) -> None:
+    db = tmp_path / "w.db"
+    _consent(db)
+    settings = {s.key: s.value for s in _rows(db, m.Setting)}
+    assert settings["ownership_confirmed"] == "1"
+    assert settings["ownership_confirmed_at"].endswith("Z")
+    with pytest.raises(ScanError, match="timed out"):  # now the engine runs
+        run_scan(_BrokenEngine(), "full", LAB, db)
+
+
+def test_consent_command_needs_the_flag() -> None:
+    with pytest.raises(SystemExit):
+        main(["consent"])
+
+
+def test_cli_scan_refuses_without_consent(tmp_path: Path, monkeypatch) -> None:
+    from watchtower import pipeline
+
+    monkeypatch.setattr(pipeline, "FakeEngine", ())  # treat the replay as a real scan
+    db = tmp_path / "w.db"
+    assert main(["scan", "--fake", str(FIXTURES), "--db", str(db)]) == 2
+    assert _count(db, m.Scan) == 0
