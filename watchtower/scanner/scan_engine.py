@@ -26,7 +26,12 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
-from watchtower.scanner.command_builder import PROFILES, build_command, require_argv_token
+from watchtower.scanner.command_builder import (
+    PROFILES,
+    build_command,
+    require_argv_token,
+    validate_command,
+)
 from watchtower.scanner.mac_helpers import label_host_mac
 from watchtower.scanner.models import ScanResult
 from watchtower.scanner.nmap_parser import parse_nmap_xml
