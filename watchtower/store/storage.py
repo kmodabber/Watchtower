@@ -75,6 +75,11 @@ def save_scan(
             continue
         host = label_host_mac(raw)  # lower-case MAC, private-address label (WT-57)
         device = _find_device(session, host, taken)
+        if device is not None and device.id in taken:
+            # Same device answered on a second IP (e.g. a router with two addresses).
+            # Saving it twice would break the one-row-per-scan rules and lose the scan.
+            log.info("%s answered again on %s; keeping its first address", host.mac, host.ip)
+            continue
         if device is None:
             device = Device(mac=host.mac, first_seen=at)
             session.add(device)

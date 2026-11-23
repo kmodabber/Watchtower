@@ -126,5 +126,19 @@ def test_lab_scans_twice_keep_the_same_devices(session: Session) -> None:
     for profile in ("quick", "full", "quick", "full"):
         result = ScanResult.from_dict(parse_nmap_xml(FIXTURES / f"lab-{profile}.xml"))
         save_scan(session, result)
-    assert _count(session, m.Device) == 5
+    # 9 lab devices plus Docker's gateway (172.28.0.1), which also answers scans.
+    assert _count(session, m.Device) == 10
     assert _count(session, m.Scan) == 4
+
+
+def test_same_mac_on_two_ips_is_saved_once(session: Session) -> None:
+    # A router or NAS with a second address answers twice with the same MAC.
+    hosts = [
+        _host(CAMERA, ip="172.28.0.3", ports=[80]),
+        _host(CAMERA, ip="172.28.0.33", ports=[80]),
+    ]
+    save_scan(session, _scan(hosts))
+    assert _count(session, m.Device) == 1
+    assert _count(session, m.Sighting) == 1
+    assert _count(session, m.Port) == 1
+    assert _device(session).ip == "172.28.0.3"  # the first address is kept
