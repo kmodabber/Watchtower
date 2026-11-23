@@ -16,6 +16,8 @@ import ipaddress
 import logging
 from typing import NoReturn
 
+from watchtower.scanner.ports import FULL_SCAN_PORTS
+
 logger = logging.getLogger(__name__)
 
 # Decision D1: no NSE scripts until Kam approves one and it is listed in doc 02.
@@ -29,8 +31,8 @@ _PROFILE_FLAGS: dict[str, tuple[str, ...]] = {
         "-sS",
         "-sV",
         "--version-light",
-        "--top-ports",
-        "1000",
+        "-p",
+        FULL_SCAN_PORTS,  # Nmap's top 1000 plus MQTT (1883, 8883): see ports.py
         "-T3",
         "--max-rate",
         "100",

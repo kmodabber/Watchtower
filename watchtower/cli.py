@@ -1,6 +1,6 @@
 """The watchtower command line entry point.
 
-Subcommands so far: db upgrade, db seed, web. Later tickets add scan, consent and scanner.
+Subcommands so far: scan, db upgrade, db seed, web. Later tickets add consent and scanner.
 """
 
 import argparse
@@ -15,6 +15,21 @@ log = logging.getLogger("watchtower")
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="watchtower", description="Home network watchtower.")
     sub = parser.add_subparsers(dest="command", title="commands", metavar="<command>")
+
+    scan = sub.add_parser("scan", help="scan the local network once and print a report")
+    scan.add_argument(
+        "--profile", choices=("full", "quick"), default="full", help="scan profile (%(default)s)"
+    )
+    scan.add_argument(
+        "--config", help="config file (default: $WATCHTOWER_CONFIG or watchtower.toml)"
+    )
+    scan.add_argument("--db", help="database file (default: db_path from the config)")
+    scan.add_argument(
+        "--fake",
+        metavar="DIR",
+        help="replay saved lab scans from DIR (lab-quick.xml, lab-full.xml) instead of "
+        "running Nmap, e.g. tests/fixtures",
+    )
 
     db = sub.add_parser("db", help="create, migrate or seed the database")
     db_sub = db.add_subparsers(dest="db_command", required=True, metavar="<action>")
@@ -38,6 +53,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
+    if args.command == "scan":
+        return _scan(args)
     if args.command == "db":
         if args.db_command == "upgrade":
             from watchtower.store.db import upgrade
@@ -64,3 +81,41 @@ def main(argv: Sequence[str] | None = None) -> int:
     else:
         parser.print_help()
     return 0
+
+
+def _scan(args: argparse.Namespace) -> int:
+    """watchtower scan (WT-102): guardrail, scan, identify, rules, store, report."""
+    from watchtower.pipeline import ScanError, format_report, run_scan
+    from watchtower.scanner.scan_engine import FakeEngine, NmapEngine
+
+    if args.fake:
+        # Replays a saved scan: no network, so no guardrail or config needed.
+        engine = FakeEngine(args.fake)
+        target = "172.28.0.0/24"
+        db_path = args.db or str(DEFAULT_DB_PATH)
+    else:
+        from watchtower.config import ConfigError, load_config
+        from watchtower.scanner.guardrail import GuardrailError, scan_scope
+
+        try:
+            config = load_config(args.config)
+            # The target always comes from our own interface, never from the user (WT-74).
+            network, own_ip = scan_scope(config.interface)
+        except (ConfigError, GuardrailError) as e:
+            log.error("Not scanning: %s", e)
+            return 2
+        engine = NmapEngine(exclude_ip=str(own_ip))
+        target = str(network)
+        db_path = args.db or str(config.db_path)
+
+    try:
+        report = run_scan(engine, args.profile, target, db_path)
+    except ScanError as e:
+        log.error("%s", e)
+        return 1
+    print(format_report(report))
+    return 0
+
+
+if __name__ == "__main__":  # python -m watchtower.cli scan (e.g. in the scanner container)
+    raise SystemExit(main())

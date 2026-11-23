@@ -5,6 +5,7 @@ Nmap and the lab network). The comparison function has fast unit tests that
 run in the normal CI job, with no Docker.
 """
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -62,6 +63,51 @@ def _load_devices() -> list[dict[str, Any]]:
 def test_inventory_fixture_matches_inventory() -> None:
     result = ScanResult.from_dict(parse_nmap_xml(FULL_INVENTORY_XML, profile="full"))
     problems = compare_scan_to_inventory(result, _load_devices())
+    assert not problems, "\n".join(problems)
+
+
+# --- Live lab tests (WT-54, Stage 2 gate): scan the running lab for real ---
+
+
+@pytest.fixture(scope="module")
+def live_full_scan() -> ScanResult:
+    """One real full scan of the lab from the scanner container, shared by the tests below."""
+    if os.environ.get("WATCHTOWER_CONFIG") != "/workspace/lab/watchtower.dev.toml":
+        pytest.skip("live lab test: runs only inside the scanner container (CI lab job)")
+    from watchtower.scanner.guardrail import scan_scope
+    from watchtower.scanner.scan_engine import NmapEngine
+
+    network, own_ip = scan_scope("eth0")  # the target comes from our own interface (WT-74)
+    assert str(network) == LAB_NETWORK, f"scanner is not on the lab network: {network}"
+    return NmapEngine(exclude_ip=str(own_ip)).run("full", str(network))
+
+
+@pytest.mark.lab
+def test_live_full_scan_matches_inventory(live_full_scan: ScanResult) -> None:
+    problems = compare_scan_to_inventory(live_full_scan, _load_devices())
+    assert not problems, "\n".join(problems)
+
+
+@pytest.mark.lab
+def test_live_watchtower_scan_raises_every_planted_risk(
+    live_full_scan: ScanResult, tmp_path: Path
+) -> None:
+    """Milestone M2: the scan > identify > rules > store pipeline on the real lab."""
+    from watchtower.pipeline import run_scan
+
+    class _Replay:  # reuse the scan above instead of scanning the lab a second time
+        def run(self, profile: str, target: str) -> ScanResult:
+            return live_full_scan
+
+    report = run_scan(_Replay(), "full", LAB_NETWORK, tmp_path / "lab.db")
+    found = {(d.mac or "").lower(): {f.rule_id for f in d.findings} for d in report.devices}
+    problems = []
+    for device in _load_devices():
+        got = found.get(device["mac"].lower(), set())
+        if got != set(device["expected_findings"]):
+            problems.append(
+                f"{device['name']}: expected {device['expected_findings']}, got {sorted(got)}"
+            )
     assert not problems, "\n".join(problems)
 
 
