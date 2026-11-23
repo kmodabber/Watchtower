@@ -1,6 +1,6 @@
 """One full pass of the scanner pipeline (WT-102, PRD T-17, milestone M2).
 
-scan (engine) > identify devices > red-flag rules > store (C2) > report.
+scan (engine) > identify devices > red-flag rules > store (C2) > alerts (WT-68) > report.
 
 The engine is passed in, so the same code runs Nmap on the lab (NmapEngine) or a saved
 scan (FakeEngine). The target always comes from the guardrail (WT-74) in the CLI, never
@@ -15,6 +15,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from sqlalchemy import Engine
+
+from watchtower.alerts.alerts import send_alerts
 from watchtower.analysis.rules import evaluate, load_rules
 from watchtower.scanner.identification import CONFIDENCE_VALUES, confidence_label, identify_scan
 from watchtower.scanner.models import Finding, ScanResult, TypeGuess
@@ -57,6 +60,7 @@ class ScanReport:
     subnet: str
     devices: list[DeviceReport]
     changes: list[str] = field(default_factory=list)  # change kinds recorded (WT-67)
+    alerted: bool | None = None  # False: the alert failed and is retried next scan (WT-68)
 
     @property
     def finding_count(self) -> int:
@@ -104,6 +108,16 @@ def _record_failure(
         engine.dispose()
 
 
+def _run_alerts(engine_db: Engine, scan_id: int, webhook_url: str, dashboard_url: str) -> bool:
+    """Run the alerts step. The scan is already saved, so a problem here must not fail it."""
+    try:
+        with make_sessionmaker(engine_db)() as session:
+            return send_alerts(session, scan_id, webhook_url, dashboard_url)
+    except Exception as exc:
+        log.warning("Alerts step failed for scan %s: %s", scan_id, type(exc).__name__)
+        return False
+
+
 def run_scan(
     engine: ScanEngine,
     profile: str,
@@ -112,11 +126,13 @@ def run_scan(
     *,
     trigger: str = "request",
     rules: list[dict[str, Any]] | None = None,
+    webhook_url: str = "",
+    dashboard_url: str = "",
 ) -> ScanReport:
-    """Scan ``target`` once, store the result and return a report.
+    """Scan ``target`` once, store the result, send alerts and return a report.
 
     A scan that fails (timeout, Nmap error, refused command, broken XML) is stored with
-    status ``failed`` and raises ScanError.
+    status ``failed`` and raises ScanError. With no ``webhook_url`` alerts are only logged.
     """
     upgrade(db_path)
     try:
@@ -135,6 +151,8 @@ def run_scan(
             scan_id = scan.id
             # Read the kinds now: the rows are expired once the transaction commits.
             change_kinds = [c.kind for c in detect_changes(session, scan_id)]
+        # After the commit: no network call may happen inside the scan's transaction.
+        alerted = _run_alerts(engine_db, scan_id, webhook_url, dashboard_url)
     finally:
         engine_db.dispose()
 
@@ -143,7 +161,7 @@ def run_scan(
         for h in result.hosts
     ]
     devices.sort(key=lambda d: (d.worst, _ip_key(d.ip)))
-    report = ScanReport(scan_id, result.profile, result.subnet, devices, change_kinds)
+    report = ScanReport(scan_id, result.profile, result.subnet, devices, change_kinds, alerted)
     log.info(
         "Scan %s stored: %d devices, %d findings, %d changes",
         scan_id,
