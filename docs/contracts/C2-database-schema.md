@@ -23,6 +23,8 @@ Every connection also sets `busy_timeout=5000`. Tables and columns are unchanged
 Rules that matter:
 
 - One device per MAC address. A second scan updates `ip` and `last_seen`, it never adds a new row.
+  A randomised MAC with no MAC match is matched by hostname, and the device takes the new MAC
+  (decision D7, `save_scan` in `watchtower/store/storage.py`).
 - At most one open finding per device, rule and port. Closing it (setting `closed_at`) allows a new one later.
 - `scan_requests` has no target column on purpose: Scan now always uses the configured subnet (guardrail).
 - No secrets and no real scan results go in git. Local databases live in `var/` (ignored).
@@ -35,7 +37,7 @@ Rules that matter:
 
 ## Decisions on the v0 open questions (WT-71)
 
-- **MAC as identity:** yes for v0. A phone that rotates its MAC shows up as a new device;
-  a hostname fallback (D7) can come later as a migration without breaking the API.
+- **Device identity (D7, Nov 14 2026):** by MAC; a randomised MAC with no MAC match is
+  matched by hostname, so a phone that rotates its MAC keeps one record. No schema change.
 - **C1 `scan_id`:** not stored. The database's integer `scans.id` is the scan id.
 - **History clean-up:** deferred to before the Pi install. It needs no schema change.
