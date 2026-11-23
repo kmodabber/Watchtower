@@ -7,6 +7,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends nmap iproute2 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir "pytest==8.3.4" "pyyaml>=6.0"
+# The lab network has no internet, so everything the scanner tests import is baked in here.
+RUN pip install --no-cache-dir "pytest==8.3.4" "pyyaml>=6.0" "sqlalchemy>=2" "alembic>=1.20.1"
 
 WORKDIR /workspace

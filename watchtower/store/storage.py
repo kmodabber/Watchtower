@@ -3,8 +3,10 @@
 Device identity follows decision D7: match by MAC; a randomised MAC with no MAC match is
 matched by hostname. Quick scans have no port data, so they only record sightings.
 
-Not here yet: opening and closing findings (T-18 step 4, WT-66) and calling this from
-`watchtower scan` (T-18 step 5, WT-102).
+Findings (T-18 step 4, WT-66, decision D6): a full scan opens a finding the first time a
+device has it, keeps it open while later full scans still see it, and closes it when a full
+scan sees the device without it. Quick scans never touch findings. `watchtower scan`
+(WT-102) calls this.
 """
 
 import json
@@ -16,8 +18,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from watchtower.scanner.mac_helpers import label_host_mac
-from watchtower.scanner.models import Host, ScanResult, TypeGuess
+from watchtower.scanner.models import Finding, Host, ScanResult, TypeGuess
 from watchtower.store.models import Device, Port, Scan, Sighting
+from watchtower.store.models import Finding as FindingRow
 
 log = logging.getLogger(__name__)
 
@@ -43,13 +46,56 @@ def _find_device(session: Session, host: Host, taken: set[int]) -> Device | None
     )
 
 
+def _update_findings(session: Session, device: Device, found: list[Finding], at: str) -> None:
+    """Open, refresh and close one device's findings after a full scan (D6)."""
+    open_rows = {
+        (row.rule_id, row.port): row
+        for row in session.scalars(
+            select(FindingRow).where(
+                FindingRow.device_id == device.id, FindingRow.closed_at.is_(None)
+            )
+        )
+    }
+    seen: set[tuple[str, int | None]] = set()
+    for f in found:
+        key = (f.rule_id, f.port)
+        if key in seen:
+            continue
+        seen.add(key)
+        row = open_rows.get(key)
+        if row is None:
+            session.add(
+                FindingRow(
+                    device_id=device.id,
+                    rule_id=f.rule_id,
+                    port=f.port,
+                    severity=f.severity,
+                    title=f.title,
+                    explanation=f.explanation,
+                    fix=f.fix,
+                    first_seen=at,
+                    last_seen=at,
+                )
+            )
+        else:
+            row.last_seen = at
+            # Rule text may have been edited since the finding opened; show the current one.
+            row.severity, row.title = f.severity, f.title
+            row.explanation, row.fix = f.explanation, f.fix
+    for key, row in open_rows.items():
+        if key not in seen:
+            row.closed_at = at  # the risk is gone: this full scan saw the device without it
+
+
 def save_scan(
     session: Session,
     result: ScanResult,
     guesses: Mapping[str, TypeGuess] | None = None,
     trigger: str = "timer",
+    findings: Mapping[str, list[Finding]] | None = None,
 ) -> Scan:
-    """Store one C1 scan result. `guesses` maps host IP to its identification.
+    """Store one C1 scan result. `guesses` and `findings` map host IP to that host's
+    identification and red-flag findings. Findings are only used on full scans (D6).
 
     Call it inside one transaction, e.g. `with make_sessionmaker(engine).begin() as s:`,
     so a failure part-way leaves nothing behind.
@@ -113,5 +159,7 @@ def save_scan(
                         version=p.version,
                     )
                 )
+            if findings is not None:  # None: the caller did not run the rules, so leave them
+                _update_findings(session, device, list(findings.get(host.ip, [])), at)
     session.flush()
     return scan
