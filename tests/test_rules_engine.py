@@ -10,11 +10,6 @@ from watchtower.scanner.models import Host, Port, ScanResult
 
 ROOT = Path(__file__).resolve().parents[1]
 
-# TEMPORARY: the saved lab scan has no port 1883 on the smart plug, because the full
-# profile (--top-ports 1000) never scans it. Remove when the profile includes 1883 and
-# tests/fixtures/lab-full.* are regenerated (same note as tests/test_full_scan.py).
-PENDING_PROFILE_FINDINGS = {("smart-plug", "RF-MQTT")}
-
 
 @pytest.fixture(scope="module")
 def rules() -> list[dict]:
@@ -48,11 +43,7 @@ def test_lab_full_scan_matches_inventory(rules):
         if device is None:
             continue  # the Docker gateway 172.28.0.1 is not a lab device
         got = rule_ids(evaluate(host, device["type"], rules))
-        expected = {
-            rule_id
-            for rule_id in device["expected_findings"]
-            if (device["name"], rule_id) not in PENDING_PROFILE_FINDINGS
-        }
+        expected = set(device["expected_findings"])
         assert got == expected, device["name"]
         checked += 1
     assert checked == 9  # every device in lab/inventory.yaml

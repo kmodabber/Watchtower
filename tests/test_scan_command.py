@@ -16,8 +16,6 @@ from watchtower.store.db import make_engine, make_sessionmaker
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "tests" / "fixtures"
 LAB = "172.28.0.0/24"
-# Same temporary gap as tests/test_rules_engine.py: the saved scan has no port 1883.
-PENDING = {("smart-plug", "RF-MQTT")}
 
 
 def _rows(db: Path, model) -> list:
@@ -48,7 +46,7 @@ def test_full_scan_raises_every_planted_risk_and_nothing_else(tmp_path: Path) ->
         if lab is None:
             assert device.findings == []  # Docker's gateway
             continue
-        expected = {r for r in lab["expected_findings"] if (lab["name"], r) not in PENDING}
+        expected = {r for r in lab["expected_findings"]}
         assert {f.rule_id for f in device.findings} == expected, lab["name"]
         assert device.guess.type == lab["type"], lab["name"]
         seen += 1
