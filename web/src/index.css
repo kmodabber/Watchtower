@@ -15,7 +15,7 @@ body { margin: 0; }
   .header { padding: 1rem 2rem; }
   .content { padding: 2rem; }
 }
-/* Severity badges, shared by device page, list and findings. */
+/* Severity badges (.sev-*): reusable on any page. */
 .badges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.25rem 0; }
 .badge {
   display: inline-block; padding: 0.1rem 0.5rem; border-radius: 1rem;
@@ -31,8 +31,8 @@ body { margin: 0; }
 .device-head h2 { margin: 0; overflow-wrap: anywhere; }
 .device-head p { margin: 0.25rem 0; }
 .badge::first-letter, .device-type::first-letter { text-transform: uppercase; }
-section { margin-top: 1.5rem; }
-section h3 { font-size: 1rem; margin: 0 0 0.5rem; }
+.device-page section { margin-top: 1.5rem; }
+.device-page h3 { font-size: 1rem; margin: 0 0 0.5rem; }
 .details { display: grid; gap: 0.5rem; margin: 0; }
 .details dt { font-size: 0.8rem; color: #666; }
 .details dd { margin: 0; overflow-wrap: anywhere; }

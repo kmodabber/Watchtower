@@ -35,7 +35,7 @@ export default function DevicePage({ rawId }: { rawId: string }) {
       </>
     );
   }
-  if (device.data) return <Device device={device.data} />;
+  if (device.data) return <DeviceView device={device.data} />;
   return (
     <>
       <BackLink />
@@ -46,10 +46,14 @@ export default function DevicePage({ rawId }: { rawId: string }) {
   );
 }
 
-function Device({ device }: { device: DeviceDetail }) {
+// type_confidence is a category code (0 / 0.33 / 0.67 / 1), not a probability: show the nearest word.
+const confidenceWord = (value: number) =>
+  value >= 0.84 ? "high" : value >= 0.5 ? "medium" : value > 0.16 ? "low" : null;
+
+function DeviceView({ device }: { device: DeviceDetail }) {
   const type = typeName(device.type);
-  const confidence =
-    type && device.type_confidence !== null ? ` · ${Math.round(device.type_confidence * 100)}% sure` : "";
+  const word = device.type_confidence === null ? null : confidenceWord(device.type_confidence);
+  const confidence = type && word ? ` · ${word} confidence` : "";
   const details: [string, string | null][] = [
     ["IP address", device.ip],
     ["MAC address", device.mac_randomised ? `${device.mac} (private address)` : device.mac],
@@ -62,7 +66,7 @@ function Device({ device }: { device: DeviceDetail }) {
   ];
 
   return (
-    <>
+    <div className="device-page">
       <BackLink />
       <header className="device-head">
         <h2>{device.name}</h2>
@@ -131,7 +135,7 @@ function Device({ device }: { device: DeviceDetail }) {
           <p className="muted">No changes yet.</p>
         )}
       </section>
-    </>
+    </div>
   );
 }
 
