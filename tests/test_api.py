@@ -28,7 +28,7 @@ def _camera(client: TestClient) -> dict:
 def test_health(client: TestClient) -> None:
     body = client.get("/api/health").json()
     assert body["database_ok"] is True
-    assert body["last_scan_at"] == "2026-11-19T06:01:41Z"
+    assert body["last_scan_at"] == "2026-11-24T04:27:29Z"
 
 
 def test_devices_worst_first_with_highest_severity(client: TestClient) -> None:
@@ -69,7 +69,7 @@ def test_findings_worst_first_and_filters(client: TestClient) -> None:
 def test_changes_newest_first_and_since(client: TestClient) -> None:
     changes = client.get("/api/changes").json()
     assert changes[0]["at"] >= changes[-1]["at"]
-    after_quick = client.get("/api/changes", params={"since": "2026-11-19T05:58:00Z"}).json()
+    after_quick = client.get("/api/changes", params={"since": "2026-11-24T04:25:10Z"}).json()
     assert after_quick and all(c["kind"] == "new_finding" for c in after_quick)
     assert client.get("/api/changes", params={"since": "yesterday"}).status_code == 422
 

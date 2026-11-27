@@ -1,14 +1,14 @@
 {
-  "scan_id": "05e982f1-cbae-49c9-9ede-59309e75c064",
+  "scan_id": "25b94c88-61a7-4925-881e-bfa3d454f1a3",
   "profile": "full",
   "subnet": "172.28.0.0/24",
-  "started_at": "2026-11-19T05:59:33+00:00",
-  "finished_at": "2026-11-19T06:01:41+00:00",
+  "started_at": "2026-11-24T04:25:11+00:00",
+  "finished_at": "2026-11-24T04:27:29+00:00",
   "nmap_version": "7.95",
   "hosts": [
     {
       "ip": "172.28.0.1",
-      "mac": "CA:37:7F:86:EE:DD",
+      "mac": "4A:20:21:6C:75:6A",
       "vendor": null,
       "mac_randomised": true,
       "hostname": null,
@@ -177,7 +177,16 @@
       "mac_randomised": false,
       "hostname": "lab-smart-plug-1.lab_net",
       "os_guess": null,
-      "ports": []
+      "ports": [
+        {
+          "port": 1883,
+          "protocol": "tcp",
+          "state": "open",
+          "service": "mqtt",
+          "product": null,
+          "version": null
+        }
+      ]
     },
     {
       "ip": "172.28.0.8",
