@@ -93,6 +93,7 @@ def _scan(args: argparse.Namespace) -> int:
         engine = FakeEngine(args.fake)
         target = "172.28.0.0/24"
         db_path = args.db or str(DEFAULT_DB_PATH)
+        webhook_url = dashboard_url = ""  # no config: alerts are only logged
     else:
         from watchtower.config import ConfigError, load_config
         from watchtower.scanner.guardrail import GuardrailError, scan_scope
@@ -107,9 +108,18 @@ def _scan(args: argparse.Namespace) -> int:
         engine = NmapEngine(exclude_ip=str(own_ip))
         target = str(network)
         db_path = args.db or str(config.db_path)
+        webhook_url = config.discord_webhook
+        dashboard_url = config.dashboard_url
 
     try:
-        report = run_scan(engine, args.profile, target, db_path)
+        report = run_scan(
+            engine,
+            args.profile,
+            target,
+            db_path,
+            webhook_url=webhook_url,
+            dashboard_url=dashboard_url,
+        )
     except ScanError as e:
         log.error("%s", e)
         return 1
