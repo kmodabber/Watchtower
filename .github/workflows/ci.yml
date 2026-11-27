@@ -1,5 +1,6 @@
 # WT-93: CI skeleton. Runs lint and unit tests on every pull request and on main.
-# WT-54: The lab test (start the lab, scan it, compare with inventory.yaml) 
+# WT-54: The lab test (start the lab, scan it, compare with inventory.yaml)
+# P3-01: The web test (build the web app, run linting and type checking)
 name: CI
 
 on:
@@ -33,7 +34,7 @@ jobs:
 
       - name: Unit tests (pytest)
         run: pytest -m "not lab"
-        
+
   lab:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -62,3 +63,23 @@ jobs:
       - name: Stop the lab
         if: always()
         run: docker compose -f lab/docker-compose.yml --profile dev down --remove-orphans
+
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build

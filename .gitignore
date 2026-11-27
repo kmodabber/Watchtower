@@ -27,3 +27,7 @@ var/
 # Tool caches
 .ruff_cache/
 .pytest_cache/
+
+# Web
+web/node_modules/
+web/dist/
