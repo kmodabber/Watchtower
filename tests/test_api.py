@@ -119,3 +119,12 @@ def test_cli_db_upgrade_and_seed(tmp_path: Path) -> None:
     assert main(["db", "upgrade", "--db", db]) == 0
     assert main(["db", "seed", "--db", db]) == 0
     assert main(["db", "seed", "--db", db]) == 1
+
+
+def test_built_dashboard_is_served(tmp_path: Path) -> None:
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    (dist / "index.html").write_text("<html>dashboard</html>")
+    client = TestClient(create_app(tmp_path / "x.db", web_dir=dist))
+    assert "dashboard" in client.get("/").text
+    assert client.get("/api/health").status_code == 200

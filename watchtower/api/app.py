@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Annotated, Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import case, func, select
 from sqlalchemy.exc import SQLAlchemyError
@@ -34,6 +35,7 @@ from watchtower.store.models import (
 Severity = Literal["high", "medium", "low", "info"]
 Profile = Literal["quick", "full"]
 WORST_FIRST = case({s: i for i, s in enumerate(SEVERITIES)}, value=Finding.severity)
+DEFAULT_WEB_DIR = Path(__file__).resolve().parents[2] / "web" / "dist"
 
 
 # ---- Response and request models -------------------------------------------------------
@@ -232,7 +234,9 @@ def _to_c2_time(value: str) -> str:
 # ---- App -------------------------------------------------------------------------------
 
 
-def create_app(db_path: str | Path = DEFAULT_DB_PATH) -> FastAPI:
+def create_app(
+    db_path: str | Path = DEFAULT_DB_PATH, web_dir: Path | None = DEFAULT_WEB_DIR
+) -> FastAPI:
     app = FastAPI(title="Watchtower API", version="0.1.0", description="Contract C4.")
     app.state.sessionmaker = make_sessionmaker(make_engine(db_path))
 
@@ -345,5 +349,9 @@ def create_app(db_path: str | Path = DEFAULT_DB_PATH) -> FastAPI:
             ScoreOut(scan_id=s.scan_id, at=at, device_id=s.device_id, score=s.score)
             for s, at in rows
         ]
+
+    # Serve the built dashboard. Mounted last so every /api route wins.
+    if web_dir is not None and web_dir.is_dir():
+        app.mount("/", StaticFiles(directory=web_dir, html=True), name="dashboard")
 
     return app
