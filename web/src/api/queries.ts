@@ -12,4 +12,10 @@ export const useFindings = () =>
 export const useChanges = () =>
   useQuery({ queryKey: ["changes"], queryFn: () => api.changes() });
 export const useScans = () =>
-  useQuery({ queryKey: ["scans"], queryFn: () => api.scans() });
+  useQuery({ queryKey: ["scans"], queryFn: () => api.scans() });// null = invalid id: the query stays disabled.
+export const useDevice = (id: number | null) =>
+  useQuery({
+    queryKey: ["devices", id],
+    queryFn: () => api.device(id as number),
+    enabled: id !== null,
+  });
